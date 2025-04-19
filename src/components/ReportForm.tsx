@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
@@ -49,13 +48,13 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
     try {
       setIsLoading(true);
       
-      // The webhook URL from the user's requirements
+      // The webhook URL
       const webhookUrl = "https://n8ern8ern8ern8er.app.n8n.cloud/webhook-test/64ae32ba-582c-4921-8452-5e0d81256d00";
       
       // Format date for the request
       const formattedDate = format(date, "yyyy-MM-dd");
       
-      // Make GET request to the webhook
+      // Make GET request to the webhook and wait for response
       const response = await fetch(`${webhookUrl}?location=${encodeURIComponent(location)}&date=${formattedDate}&email=${encodeURIComponent(email)}`, {
         method: "GET",
         headers: {
@@ -67,15 +66,21 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
         throw new Error(`Server responded with status: ${response.status}`);
       }
 
-      const data = await response.json();
+      // Parse the response data
+      const responseData = await response.json();
       
-      // Create a mock report URL (in a real app, this would come from the webhook response)
+      // Verify that we have all required fields from the webhook response
+      if (!responseData.location || !responseData.date || !responseData.email || !responseData.urlOfSecurityReport) {
+        throw new Error('Incomplete data received from webhook');
+      }
+
+      // Create report object using the webhook response data
       const newReport: GeneratedReport = {
         id: Date.now().toString(),
-        location,
-        date,
-        email,
-        reportUrl: `https://securityreport.example.com/report-${Date.now()}.pdf`,
+        location: responseData.location,
+        date: new Date(responseData.date),
+        email: responseData.email,
+        reportUrl: responseData.urlOfSecurityReport,
         generatedAt: new Date(),
       };
       
