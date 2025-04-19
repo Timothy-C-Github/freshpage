@@ -49,7 +49,7 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
       setIsLoading(true);
       
       // The webhook URL
-      const webhookUrl = "https://n8ern8ern8ern8er.app.n8n.cloud/webhook-test/64ae32ba-582c-4921-8452-5e0d81256d00";
+      const webhookUrl = "https://n8ern8ern8ern8er.app.n8n.cloud/webhook/64ae32ba-582c-4921-8452-5e0d81256d00";
       
       // Format date for the request
       const formattedDate = format(date, "yyyy-MM-dd");
