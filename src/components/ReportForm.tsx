@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
 
 export interface FormData {
   location: string;
-  date: Date | { from: Date; to?: Date };
+  date: Date | { from: Date; to: Date };
   email: string;
 }
 
@@ -26,16 +26,10 @@ interface ReportFormProps {
   onReportGenerated: (report: GeneratedReport) => void;
 }
 
-type DateRange = { from: Date; to?: Date };
-type DateSelection = Date | DateRange | undefined;
+type DateSelection = Date | { from: Date; to: Date } | undefined;
 
-function isDateRange(selection: DateSelection): selection is DateRange {
-  return (
-    typeof selection === "object" &&
-    selection !== null &&
-    "from" in selection &&
-    selection.from instanceof Date
-  );
+function isDateRange(selection: DateSelection): selection is { from: Date; to: Date } {
+  return typeof selection === "object" && selection !== null && "from" in selection && "to" in selection;
 }
 
 export function ReportForm({ onReportGenerated }: ReportFormProps) {
@@ -68,15 +62,10 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
       // Prepare date parameters: if range, send both from and to, else send single date
       let dateQuery = "";
       if (isDateRange(date)) {
-        if (!date.from) {
-          throw new Error("Please select a valid start date.");
+        if (!date.from || !date.to) {
+          throw new Error("Please select a valid date range.");
         }
-        if (date.to) {
-          dateQuery = `&dateFrom=${encodeURIComponent(formatDateForWebhook(date.from))}&dateTo=${encodeURIComponent(formatDateForWebhook(date.to))}`;
-        } else {
-          // single day range (from but no to)
-          dateQuery = `&date=${encodeURIComponent(formatDateForWebhook(date.from))}`;
-        }
+        dateQuery = `&dateFrom=${encodeURIComponent(formatDateForWebhook(date.from))}&dateTo=${encodeURIComponent(formatDateForWebhook(date.to))}`;
       } else {
         dateQuery = `&date=${encodeURIComponent(formatDateForWebhook(date))}`;
       }
@@ -152,9 +141,6 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
         }
         return `${fromFormatted} - ${toFormatted}`;
       }
-      if (date.from) {
-        return format(date.from, "PPP");
-      }
       return <span>Select date range</span>;
     }
     return format(date, "PPP");
@@ -192,19 +178,8 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
           <PopoverContent className="w-auto p-0" align="start">
             <Calendar
               mode="range"
-              selected={date && "from" in (date ?? {}) ? date : undefined}
-              onSelect={(selected) => {
-                // selected is DateRange where to might be undefined
-                if (!selected) {
-                  setDate(undefined);
-                } else if (selected.to) {
-                  setDate({ from: selected.from, to: selected.to });
-                } else if (selected.from) {
-                  setDate(selected.from);
-                } else {
-                  setDate(undefined);
-                }
-              }}
+              selected={date}
+              onSelect={setDate}
               initialFocus
               className="p-3 pointer-events-auto"
             />
@@ -230,4 +205,3 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
     </form>
   );
 }
-
