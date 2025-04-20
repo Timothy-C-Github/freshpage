@@ -181,6 +181,13 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
     }
   };
 
+  // Always convert date state to DateRange for Calendar selected prop
+  const getDateRangeForCalendar = (): DateRange | undefined => {
+    if (!date) return undefined;
+    if (isDateRange(date)) return date;
+    return { from: date, to: date };
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-2">
@@ -213,7 +220,7 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
           <PopoverContent className="w-auto p-0" align="start">
             <Calendar
               mode="range"
-              selected={date}
+              selected={getDateRangeForCalendar()}
               onSelect={handleDateSelect}
               initialFocus
               className="p-3 pointer-events-auto"
@@ -240,3 +247,4 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
     </form>
   );
 }
+
