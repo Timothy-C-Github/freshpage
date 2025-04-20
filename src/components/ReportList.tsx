@@ -1,4 +1,5 @@
 
+import { useMemo } from "react";
 import { format } from "date-fns";
 import { Clock, Link, MapPin, Mail, Calendar, Download } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -63,6 +64,27 @@ async function downloadFile(url: string, filename: string) {
   }
 }
 
+// Helper to parse string or Date to valid Date object or null
+function parseReportDate(date: Date | string | unknown): Date | null {
+  if (date instanceof Date && !isNaN(date.getTime())) {
+    return date;
+  }
+  if (typeof date === "string") {
+    const parsed = new Date(date);
+    if (!isNaN(parsed.getTime())) {
+      return parsed;
+    }
+    // Sometimes the date strings can have ordinal suffixes like "23rd March 2025"
+    // We can try removing those suffixes and parse again:
+    const cleaned = date.replace(/(\d+)(st|nd|rd|th)/, "$1");
+    const reparsed = new Date(cleaned);
+    if (!isNaN(reparsed.getTime())) {
+      return reparsed;
+    }
+  }
+  return null;
+}
+
 export function ReportList({ reports }: ReportListProps) {
   if (reports.length === 0) {
     return (
@@ -78,11 +100,15 @@ export function ReportList({ reports }: ReportListProps) {
       
       <div className="grid gap-4">
         {reports.map((report) => {
+          // Parse report.date safely before formatting
+          const validDate = parseReportDate(report.date);
+          
           const directDownloadUrl = getGoogleDriveDownloadUrl(report.reportUrl);
           const docsPdfUrl = getGoogleDocsPdfExportUrl(report.reportUrl);
+          
           // Generate a more meaningful filename using date and location
           const safeLocation = report.location.replace(/[^a-zA-Z0-9-_]/g, "_");
-          const formattedDate = format(report.date, "yyyy-MM-dd");
+          const formattedDate = validDate ? format(validDate, "yyyy-MM-dd") : "unknown-date";
           const fileName = `security-report-${formattedDate}-${safeLocation}.pdf`;
 
           // Choose the best URL for download:
@@ -98,7 +124,7 @@ export function ReportList({ reports }: ReportListProps) {
                   <Badge className="bg-security-600 text-white">Report Generated</Badge>
                   <div className="flex items-center text-xs text-muted-foreground">
                     <Clock className="h-3 w-3 mr-1" /> 
-                    {format(report.generatedAt, "h:mm a 'on' MMMM d, yyyy")}
+                    {validDate ? format(report.generatedAt, "h:mm a 'on' MMMM d, yyyy") : "Invalid date"}
                   </div>
                 </div>
               </CardHeader>
@@ -148,7 +174,9 @@ export function ReportList({ reports }: ReportListProps) {
                       <Calendar className="h-4 w-4 text-muted-foreground mt-1 flex-shrink-0" />
                       <div>
                         <div className="text-xs text-muted-foreground">Date Requested</div>
-                        <div className="text-sm">{format(report.date, "MMM d, yyyy")}</div>
+                        <div className="text-sm">
+                          {validDate ? format(validDate, "MMM d, yyyy") : <span className="text-red-500">Invalid date</span>}
+                        </div>
                       </div>
                     </div>
                     
