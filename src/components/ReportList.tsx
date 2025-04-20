@@ -1,9 +1,10 @@
 
 import { format } from "date-fns";
-import { Clock, Link, MapPin, Mail, Calendar } from "lucide-react";
+import { Clock, Link, MapPin, Mail, Calendar, Download } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { GeneratedReport } from "./ReportForm";
 
 interface ReportListProps {
@@ -38,19 +39,36 @@ export function ReportList({ reports }: ReportListProps) {
             
             <CardContent className="pt-2 pb-4 px-4">
               <div className="space-y-3">
-                <div className="flex items-start gap-2">
-                  <Link className="h-4 w-4 text-primary mt-1 flex-shrink-0" />
-                  <div>
+                <div className="flex items-center gap-2">
+                  <Link className="h-4 w-4 text-primary flex-shrink-0" />
+                  <div className="flex-1">
                     <div className="text-sm font-medium">Report Link</div>
                     <a 
                       href={report.reportUrl} 
                       target="_blank" 
                       rel="noopener noreferrer" 
-                      className="text-sm text-primary hover:underline"
+                      className="text-sm text-primary hover:underline break-all"
                     >
                       {report.reportUrl.split('/').pop()}
                     </a>
                   </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    asChild
+                    className="flex items-center gap-1"
+                  >
+                    <a
+                      href={report.reportUrl}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      download
+                      aria-label={`Download report ${report.reportUrl.split('/').pop()}`}
+                    >
+                      <Download className="h-4 w-4" />
+                      Download
+                    </a>
+                  </Button>
                 </div>
                 
                 <Separator className="my-1" />
