@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { CalendarIcon } from "lucide-react";
-import { format, isValid } from "date-fns";
+import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
@@ -99,43 +99,18 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
 
       if (
         !responseData.location ||
-        // Accept either dateFrom+dateTo or date, so don't require date here
+        !responseData.date ||
         !responseData.email ||
         !responseData.urlOfSecurityReport
       ) {
         throw new Error("Incomplete data received from webhook");
       }
 
-      // Parse possible dateFrom and dateTo strings (preferred), or fallback to single "date"
-      let reportDate: Date | DateRange | null = null;
-      if (responseData.dateFrom) {
-        const fromDate = new Date(responseData.dateFrom);
-        if (!isValid(fromDate)) {
-          throw new Error("Received invalid 'dateFrom' from webhook");
-        }
-        if (responseData.dateTo) {
-          const toDate = new Date(responseData.dateTo);
-          if (!isValid(toDate)) {
-            throw new Error("Received invalid 'dateTo' from webhook");
-          }
-          reportDate = { from: fromDate, to: toDate };
-        } else {
-          reportDate = fromDate;
-        }
-      } else if (responseData.date) {
-        const singleDate = new Date(responseData.date);
-        if (!isValid(singleDate)) {
-          throw new Error("Received invalid 'date' from webhook");
-        }
-        reportDate = singleDate;
-      } else {
-        throw new Error("No date information received from webhook");
-      }
-
+      // We assume webhook's response date is still a single date string.
       const newReport: GeneratedReport = {
         id: Date.now().toString(),
         location: responseData.location,
-        date: reportDate,
+        date: new Date(responseData.date),
         email: responseData.email,
         reportUrl: responseData.urlOfSecurityReport,
         generatedAt: new Date(),
@@ -217,8 +192,7 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
           <PopoverContent className="w-auto p-0" align="start">
             <Calendar
               mode="range"
-              // Only pass DateRange to selected as required by type
-              selected={isDateRange(date) ? date : undefined}
+              selected={date && "from" in (date ?? {}) ? date : undefined}
               onSelect={(selected) => {
                 // selected is DateRange where to might be undefined
                 if (!selected) {
