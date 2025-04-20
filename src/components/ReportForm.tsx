@@ -9,6 +9,7 @@ import { Label } from "@/components/ui/label";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
+import type { SelectRangeEventHandler, DateRange } from "react-day-picker";
 
 export interface FormData {
   location: string;
@@ -29,7 +30,14 @@ interface ReportFormProps {
 type DateSelection = Date | { from: Date; to: Date } | undefined;
 
 function isDateRange(selection: DateSelection): selection is { from: Date; to: Date } {
-  return typeof selection === "object" && selection !== null && "from" in selection && "to" in selection;
+  return (
+    typeof selection === "object" &&
+    selection !== null &&
+    "from" in selection &&
+    "to" in selection &&
+    selection.from instanceof Date && 
+    selection.to instanceof Date
+  );
 }
 
 export function ReportForm({ onReportGenerated }: ReportFormProps) {
@@ -57,7 +65,8 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
     try {
       setIsLoading(true);
 
-      const webhookUrl = "https://n8ern8ern8ern8er.app.n8n.cloud/webhook/64ae32ba-582c-4921-8452-5e0d81256d00";
+      const webhookUrl =
+        "https://n8ern8ern8ern8er.app.n8n.cloud/webhook/64ae32ba-582c-4921-8452-5e0d81256d00";
 
       // Prepare date parameters: if range, send both from and to, else send single date
       let dateQuery = "";
@@ -65,7 +74,9 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
         if (!date.from || !date.to) {
           throw new Error("Please select a valid date range.");
         }
-        dateQuery = `&dateFrom=${encodeURIComponent(formatDateForWebhook(date.from))}&dateTo=${encodeURIComponent(formatDateForWebhook(date.to))}`;
+        dateQuery = `&dateFrom=${encodeURIComponent(
+          formatDateForWebhook(date.from)
+        )}&dateTo=${encodeURIComponent(formatDateForWebhook(date.to))}`;
       } else {
         dateQuery = `&date=${encodeURIComponent(formatDateForWebhook(date))}`;
       }
@@ -86,20 +97,35 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
 
       const responseData = await response.json();
 
+      // Check required fields including new dateFrom/dateTo support
+      const hasDateRange =
+        typeof responseData.dateFrom === "string" && typeof responseData.dateTo === "string";
+
       if (
         !responseData.location ||
-        !responseData.date ||
         !responseData.email ||
-        !responseData.urlOfSecurityReport
+        !responseData.urlOfSecurityReport ||
+        (!responseData.date && !hasDateRange)
       ) {
         throw new Error("Incomplete data received from webhook");
       }
 
-      // We assume webhook's response date is still a single date string.
+      // Construct date property based on presence of date range or single date
+      let reportDate: Date | { from: Date; to: Date };
+
+      if (hasDateRange) {
+        reportDate = {
+          from: new Date(responseData.dateFrom),
+          to: new Date(responseData.dateTo),
+        };
+      } else {
+        reportDate = new Date(responseData.date);
+      }
+
       const newReport: GeneratedReport = {
         id: Date.now().toString(),
         location: responseData.location,
-        date: new Date(responseData.date),
+        date: reportDate,
         email: responseData.email,
         reportUrl: responseData.urlOfSecurityReport,
         generatedAt: new Date(),
@@ -146,6 +172,15 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
     return format(date, "PPP");
   };
 
+  // Fix types for react-day-picker's onSelect for range mode
+  const handleDateSelect: SelectRangeEventHandler = (range) => {
+    if (!range || !range.from || !range.to) {
+      setDate(undefined);
+    } else {
+      setDate({ from: range.from, to: range.to });
+    }
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-2">
@@ -179,7 +214,7 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
             <Calendar
               mode="range"
               selected={date}
-              onSelect={setDate}
+              onSelect={handleDateSelect}
               initialFocus
               className="p-3 pointer-events-auto"
             />
