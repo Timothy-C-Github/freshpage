@@ -26,6 +26,28 @@ function getGoogleDriveDownloadUrl(url: string): string | null {
   }
 }
 
+// Function to programmatically download file from URL with fetch and a blob link
+async function downloadFile(url: string, filename: string) {
+  try {
+    const response = await fetch(url);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch file: ${response.statusText}`);
+    }
+    const blob = await response.blob();
+    const blobUrl = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = blobUrl;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    window.URL.revokeObjectURL(blobUrl);
+  } catch (error) {
+    console.error("Download failed:", error);
+    alert("Download failed. Please try again.");
+  }
+}
+
 export function ReportList({ reports }: ReportListProps) {
   if (reports.length === 0) {
     return (
@@ -42,6 +64,8 @@ export function ReportList({ reports }: ReportListProps) {
       <div className="grid gap-4">
         {reports.map((report) => {
           const directDownloadUrl = getGoogleDriveDownloadUrl(report.reportUrl);
+          // Filename to use for download, force .pdf extension
+          const fileName = (report.reportUrl.split('/').pop() || 'report') + '.pdf';
 
           return (
             <Card key={report.id} className="bg-card shadow-sm border border-border/40 overflow-hidden">
@@ -73,19 +97,20 @@ export function ReportList({ reports }: ReportListProps) {
                     <Button
                       variant="outline"
                       size="sm"
-                      asChild
                       className="flex items-center gap-1"
+                      onClick={(e) => {
+                        e.preventDefault();
+                        // Download from Google Drive direct download url if available, else original url
+                        if (directDownloadUrl) {
+                          downloadFile(directDownloadUrl, fileName);
+                        } else {
+                          downloadFile(report.reportUrl, fileName);
+                        }
+                      }}
+                      aria-label={`Download report ${report.reportUrl.split('/').pop()}`}
                     >
-                      <a
-                        href={directDownloadUrl || report.reportUrl}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        download
-                        aria-label={`Download report ${report.reportUrl.split('/').pop()}`}
-                      >
-                        <Download className="h-4 w-4" />
-                        Download
-                      </a>
+                      <Download className="h-4 w-4" />
+                      Download
                     </Button>
                   </div>
                   
