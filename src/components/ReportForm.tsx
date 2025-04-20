@@ -55,13 +55,12 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
         "https://n8ern8ern8ern8er.app.n8n.cloud/webhook/64ae32ba-582c-4921-8452-5e0d81256d00";
 
       let dateQuery = "";
+      // Since we no longer expect dateFrom and dateTo, we always send date(s) flattened
       if (isDateRange(date)) {
         if (!date.from || !date.to) {
           throw new Error("Please select a valid date range.");
         }
-        dateQuery = `&dateFrom=${encodeURIComponent(
-          formatDateForWebhook(date.from)
-        )}&dateTo=${encodeURIComponent(formatDateForWebhook(date.to))}`;
+        dateQuery = `&dateFrom=${encodeURIComponent(formatDateForWebhook(date.from))}&dateTo=${encodeURIComponent(formatDateForWebhook(date.to))}`;
       } else {
         dateQuery = `&date=${encodeURIComponent(formatDateForWebhook(date))}`;
       }
@@ -82,28 +81,16 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
 
       const responseData = await response.json();
 
-      const hasDateRange =
-        typeof responseData.dateFrom === "string" && typeof responseData.dateTo === "string";
-
       if (
         !responseData.location ||
         !responseData.email ||
-        !responseData.urlOfSecurityReport ||
-        (!responseData.date && !hasDateRange)
+        !responseData.urlOfSecurityReport
       ) {
         throw new Error("Incomplete data received from webhook");
       }
 
-      let reportDate: Date | { from: Date; to: Date };
-
-      if (hasDateRange) {
-        reportDate = {
-          from: new Date(responseData.dateFrom),
-          to: new Date(responseData.dateTo),
-        };
-      } else {
-        reportDate = new Date(responseData.date);
-      }
+      // Use the date sent from the form as reportDate directly
+      const reportDate: Date | { from: Date; to: Date } = date;
 
       const newReport: GeneratedReport = {
         id: Date.now().toString(),
@@ -170,4 +157,3 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
     </form>
   );
 }
-

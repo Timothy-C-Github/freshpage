@@ -7,7 +7,6 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { GeneratedReport } from "./ReportForm";
 
-// Helper to convert Google Drive shared url to direct download url
 function getGoogleDriveDownloadUrl(url: string): string | null {
   try {
     const gdriveRegex = /https:\/\/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)\/?/;
@@ -22,7 +21,6 @@ function getGoogleDriveDownloadUrl(url: string): string | null {
   }
 }
 
-// Helper to convert Google Docs document "edit" url into PDF export url
 function getGoogleDocsPdfExportUrl(url: string): string | null {
   try {
     const docsRegex = /https:\/\/docs\.google\.com\/document\/d\/([a-zA-Z0-9_-]+)\/edit/;
@@ -37,7 +35,6 @@ function getGoogleDocsPdfExportUrl(url: string): string | null {
   }
 }
 
-// Function to programmatically download file from URL with fetch and a blob link
 async function downloadFile(url: string, filename: string) {
   try {
     const response = await fetch(url);
@@ -59,7 +56,6 @@ async function downloadFile(url: string, filename: string) {
   }
 }
 
-// Helper to parse string or Date to valid Date object or null
 function parseReportDate(date: Date | string | unknown): Date | null {
   if (date instanceof Date && !isNaN(date.getTime())) {
     return date;
@@ -69,7 +65,6 @@ function parseReportDate(date: Date | string | unknown): Date | null {
     if (!isNaN(parsed.getTime())) {
       return parsed;
     }
-    // Remove ordinal suffixes if any and parse again
     const cleaned = date.replace(/(\d+)(st|nd|rd|th)/, "$1");
     const reparsed = new Date(cleaned);
     if (!isNaN(reparsed.getTime())) {
@@ -98,19 +93,46 @@ export function ReportList({ reports }: ReportListProps) {
 
       <div className="grid gap-4">
         {reports.map((report) => {
-          // We expect report.date to be a Date or possibly a string, never a range now
           let displayDate: React.ReactNode = <span className="text-red-500">Invalid date</span>;
 
-          const validDate = parseReportDate(report.date);
-          if (validDate) {
-            displayDate = format(validDate, "MMM d, yyyy");
+          // report.date can be a Date or { from, to }
+          if (!report.date) {
+            displayDate = <span className="text-red-500">Date missing</span>;
+          } else if ('from' in report.date && 'to' in report.date) {
+            if (report.date.from && report.date.to) {
+              const fromFormatted = format(report.date.from, "MMM d, yyyy");
+              const toFormatted = format(report.date.to, "MMM d, yyyy");
+              displayDate = report.date.from.getTime() === report.date.to.getTime()
+                ? fromFormatted
+                : `${fromFormatted} - ${toFormatted}`;
+            } else {
+              displayDate = <span className="text-red-500">Invalid date range</span>;
+            }
+          } else {
+            // single date
+            const validDate = parseReportDate(report.date);
+            if (validDate) {
+              displayDate = format(validDate, "MMM d, yyyy");
+            }
           }
 
           const directDownloadUrl = getGoogleDriveDownloadUrl(report.reportUrl);
           const docsPdfUrl = getGoogleDocsPdfExportUrl(report.reportUrl);
 
           const safeLocation = report.location.replace(/[^a-zA-Z0-9-_]/g, "_");
-          const formattedDate = validDate ? format(validDate, "yyyy-MM-dd") : "unknown-date";
+          const formattedDate =
+            typeof report.date === 'object' && 'from' in report.date && report.date.from
+              ? format(report.date.from, "yyyy-MM-dd")
+              : typeof report.date === 'object' && 'to' in report.date && report.date.to
+              ? format(report.date.to, "yyyy-MM-dd")
+              : formatReportDate(report.date);
+          function formatReportDate(date: Date | { from: Date; to: Date } | undefined): string {
+            if (!date) return "unknown-date";
+            if (date instanceof Date) {
+              return format(date, "yyyy-MM-dd");
+            }
+            return "unknown-date";
+          }
           const fileName = `security-report-${formattedDate}-${safeLocation}.pdf`;
 
           const downloadUrl = docsPdfUrl || directDownloadUrl || report.reportUrl;
