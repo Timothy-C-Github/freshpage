@@ -63,6 +63,20 @@ async function downloadFile(url: string, filename: string) {
   }
 }
 
+// Helper to extract a single date (preferably a Date object) from report.date, default fallback new Date(0)
+function extractSingleDate(date: Date | { from: Date; to?: Date }): Date {
+  if (!date) {
+    return new Date(0);
+  }
+  if (date instanceof Date) {
+    return date;
+  }
+  if ("from" in date && date.from instanceof Date) {
+    return date.from;
+  }
+  return new Date(0);
+}
+
 export function ReportList({ reports }: ReportListProps) {
   if (reports.length === 0) {
     return (
@@ -82,7 +96,7 @@ export function ReportList({ reports }: ReportListProps) {
           const docsPdfUrl = getGoogleDocsPdfExportUrl(report.reportUrl);
           // Generate a more meaningful filename using date and location
           const safeLocation = report.location.replace(/[^a-zA-Z0-9-_]/g, "_");
-          const formattedDate = format(report.date, "yyyy-MM-dd");
+          const formattedDate = format(extractSingleDate(report.date), "yyyy-MM-dd");
           const fileName = `security-report-${formattedDate}-${safeLocation}.pdf`;
 
           // Choose the best URL for download:
@@ -148,7 +162,7 @@ export function ReportList({ reports }: ReportListProps) {
                       <Calendar className="h-4 w-4 text-muted-foreground mt-1 flex-shrink-0" />
                       <div>
                         <div className="text-xs text-muted-foreground">Date Requested</div>
-                        <div className="text-sm">{format(report.date, "MMM d, yyyy")}</div>
+                        <div className="text-sm">{format(extractSingleDate(report.date), "MMM d, yyyy")}</div>
                       </div>
                     </div>
                     
