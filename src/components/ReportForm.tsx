@@ -29,13 +29,7 @@ interface ReportFormProps {
 type DateSelection = Date | { from: Date; to: Date } | undefined;
 
 function isDateRange(selection: DateSelection): selection is { from: Date; to: Date } {
-  return (
-    typeof selection === "object" &&
-    selection !== null &&
-    "from" in selection &&
-    selection.from instanceof Date &&
-    ("to" in selection ? selection.to instanceof Date : true)
-  );
+  return typeof selection === "object" && selection !== null && "from" in selection && "to" in selection;
 }
 
 export function ReportForm({ onReportGenerated }: ReportFormProps) {
@@ -152,20 +146,6 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
     return format(date, "PPP");
   };
 
-  const handleDateSelect = (selected: { from?: Date; to?: Date }) => {
-    if (selected.from && !selected.to) {
-      // If only one date is selected in the range, treat as single date
-      setDate(selected.from);
-    } else if (selected.from && selected.to) {
-      // Both from and to are selected
-      setDate({ from: selected.from, to: selected.to });
-    } else if (selected.from) {
-      setDate({ from: selected.from, to: selected.from });
-    } else {
-      setDate(undefined);
-    }
-  };
-
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-2">
@@ -199,7 +179,7 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
             <Calendar
               mode="range"
               selected={date}
-              onSelect={handleDateSelect}
+              onSelect={setDate}
               initialFocus
               className="p-3 pointer-events-auto"
             />
