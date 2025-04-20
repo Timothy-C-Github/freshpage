@@ -1,3 +1,4 @@
+
 import { useState } from "react";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
@@ -196,7 +197,7 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
 
       <div className="space-y-2">
         <Label htmlFor="date">Date Requested</Label>
-        <Popover>
+        <Popover modal={false}>
           <PopoverTrigger asChild>
             <Button
               id="date"
@@ -210,7 +211,7 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
               {getDateLabel()}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0 pointer-events-auto" align="start">
+          <PopoverContent forceMount className="w-auto p-0 pointer-events-auto" align="start">
             <Calendar
               mode="range"
               selected={getDateRangeForCalendar()}
@@ -240,3 +241,4 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
     </form>
   );
 }
+
