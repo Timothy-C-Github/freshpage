@@ -35,8 +35,79 @@ function isDateRange(selection: DateSelection): selection is { from: Date; to: D
     selection !== null &&
     "from" in selection &&
     "to" in selection &&
-    selection.from instanceof Date && 
+    selection.from instanceof Date &&
     selection.to instanceof Date
+  );
+}
+
+function DatePicker({
+  date,
+  setDate,
+}: {
+  date: DateSelection;
+  setDate: React.Dispatch<React.SetStateAction<DateSelection>>;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const handleSelect: SelectRangeEventHandler = (range) => {
+    if (!range || !range.from || !range.to) {
+      setDate(undefined);
+    } else {
+      setDate({ from: range.from, to: range.to });
+    }
+  };
+
+  const getDateRangeForCalendar = (): DateRange | undefined => {
+    if (!date) return undefined;
+    if (isDateRange(date)) return { from: date.from, to: date.to };
+    return { from: date, to: date };
+  };
+
+  const getDateLabel = () => {
+    if (!date) return <span>Select date</span>;
+
+    if (isDateRange(date)) {
+      if (date.from && date.to) {
+        const fromFormatted = format(date.from, "PPP");
+        const toFormatted = format(date.to, "PPP");
+        if (date.from.getTime() === date.to.getTime()) {
+          return fromFormatted;
+        }
+        return `${fromFormatted} - ${toFormatted}`;
+      }
+      return <span>Select date range</span>;
+    }
+    return format(date, "PPP");
+  };
+
+  return (
+    <div className="space-y-2">
+      <Label htmlFor="date">Date Requested</Label>
+      <Popover open={open} onOpenChange={setOpen} modal={false}>
+        <PopoverTrigger asChild>
+          <Button
+            id="date"
+            variant="outline"
+            className={cn(
+              "w-full justify-start text-left font-normal bg-secondary/50",
+              !date && "text-muted-foreground"
+            )}
+          >
+            <CalendarIcon className="mr-2 h-4 w-4" />
+            {getDateLabel()}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent forceMount className="w-auto p-0" align="start">
+          <Calendar
+            mode="range"
+            selected={getDateRangeForCalendar()}
+            onSelect={handleSelect}
+            initialFocus
+            className="p-3"
+          />
+        </PopoverContent>
+      </Popover>
+    </div>
   );
 }
 
@@ -151,37 +222,6 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
     }
   };
 
-  const handleDateSelect: SelectRangeEventHandler = (range) => {
-    if (!range || !range.from || !range.to) {
-      setDate(undefined);
-    } else {
-      setDate({ from: range.from, to: range.to });
-    }
-  };
-
-  const getDateRangeForCalendar = (): DateRange | undefined => {
-    if (!date) return undefined;
-    if (isDateRange(date)) return { from: date.from, to: date.to };
-    return { from: date, to: date };
-  };
-
-  const getDateLabel = () => {
-    if (!date) return <span>Select date</span>;
-
-    if (isDateRange(date)) {
-      if (date.from && date.to) {
-        const fromFormatted = format(date.from, "PPP");
-        const toFormatted = format(date.to, "PPP");
-        if (date.from.getTime() === date.to.getTime()) {
-          return fromFormatted;
-        }
-        return `${fromFormatted} - ${toFormatted}`;
-      }
-      return <span>Select date range</span>;
-    }
-    return format(date, "PPP");
-  };
-
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       <div className="space-y-2">
@@ -195,33 +235,7 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
         />
       </div>
 
-      <div className="space-y-2">
-        <Label htmlFor="date">Date Requested</Label>
-        <Popover modal={false}>
-          <PopoverTrigger asChild>
-            <Button
-              id="date"
-              variant="outline"
-              className={cn(
-                "w-full justify-start text-left font-normal bg-secondary/50",
-                !date && "text-muted-foreground"
-              )}
-            >
-              <CalendarIcon className="mr-2 h-4 w-4" />
-              {getDateLabel()}
-            </Button>
-          </PopoverTrigger>
-          <PopoverContent forceMount className="w-auto p-0 pointer-events-auto" align="start">
-            <Calendar
-              mode="range"
-              selected={getDateRangeForCalendar()}
-              onSelect={handleDateSelect}
-              initialFocus
-              className="p-3 pointer-events-auto"
-            />
-          </PopoverContent>
-        </Popover>
-      </div>
+      <DatePicker date={date} setDate={setDate} />
 
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
