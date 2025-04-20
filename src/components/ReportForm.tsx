@@ -99,19 +99,38 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
 
       if (
         !responseData.location ||
-        !responseData.date ||
         !responseData.email ||
         !responseData.urlOfSecurityReport
       ) {
         throw new Error("Incomplete data received from webhook");
       }
 
-      const reportDate = new Date(responseData.date);
-      if (!isValid(reportDate)) {
-        throw new Error("Received invalid date from webhook");
+      // Parse possible dateFrom and dateTo strings (preferred), or fallback to single "date"
+      let reportDate: Date | DateRange | null = null;
+      if (responseData.dateFrom) {
+        const fromDate = new Date(responseData.dateFrom);
+        if (!isValid(fromDate)) {
+          throw new Error("Received invalid 'dateFrom' from webhook");
+        }
+        if (responseData.dateTo) {
+          const toDate = new Date(responseData.dateTo);
+          if (!isValid(toDate)) {
+            throw new Error("Received invalid 'dateTo' from webhook");
+          }
+          reportDate = { from: fromDate, to: toDate };
+        } else {
+          reportDate = fromDate;
+        }
+      } else if (responseData.date) {
+        const singleDate = new Date(responseData.date);
+        if (!isValid(singleDate)) {
+          throw new Error("Received invalid 'date' from webhook");
+        }
+        reportDate = singleDate;
+      } else {
+        throw new Error("No date information received from webhook");
       }
 
-      // We assume webhook's response date is still a single date string.
       const newReport: GeneratedReport = {
         id: Date.now().toString(),
         location: responseData.location,
