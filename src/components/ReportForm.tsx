@@ -177,6 +177,7 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
     if (!range || !range.from || !range.to) {
       setDate(undefined);
     } else {
+      // Important: setDate with proper values for from/to
       setDate({ from: range.from, to: range.to });
     }
   };
@@ -184,7 +185,8 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
   // Always convert date state to DateRange for Calendar selected prop
   const getDateRangeForCalendar = (): DateRange | undefined => {
     if (!date) return undefined;
-    if (isDateRange(date)) return date;
+    if (isDateRange(date)) return { from: date.from, to: date.to };
+    // If date is a single Date, convert to a range with same from/to
     return { from: date, to: date };
   };
 
