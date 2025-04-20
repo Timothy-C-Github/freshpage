@@ -1,15 +1,14 @@
 
 import { useState } from "react";
-import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
-import type { SelectRangeEventHandler, DateRange } from "react-day-picker";
+import type { DateSelection } from "@/utils/dateUtils";
+import { isDateRange } from "@/utils/dateUtils";
+import { DatePicker } from "./DatePicker";
 
 export interface FormData {
   location: string;
@@ -25,90 +24,6 @@ export interface GeneratedReport extends FormData {
 
 interface ReportFormProps {
   onReportGenerated: (report: GeneratedReport) => void;
-}
-
-type DateSelection = Date | { from: Date; to: Date } | undefined;
-
-function isDateRange(selection: DateSelection): selection is { from: Date; to: Date } {
-  return (
-    typeof selection === "object" &&
-    selection !== null &&
-    "from" in selection &&
-    "to" in selection &&
-    selection.from instanceof Date &&
-    selection.to instanceof Date
-  );
-}
-
-function DatePicker({
-  date,
-  setDate,
-}: {
-  date: DateSelection;
-  setDate: React.Dispatch<React.SetStateAction<DateSelection>>;
-}) {
-  const [open, setOpen] = useState(false);
-
-  const handleSelect: SelectRangeEventHandler = (range) => {
-    if (!range || !range.from || !range.to) {
-      setDate(undefined);
-    } else {
-      setDate({ from: range.from, to: range.to });
-    }
-  };
-
-  const getDateRangeForCalendar = (): DateRange | undefined => {
-    if (!date) return undefined;
-    if (isDateRange(date)) return { from: date.from, to: date.to };
-    return { from: date, to: date };
-  };
-
-  const getDateLabel = () => {
-    if (!date) return <span>Select date</span>;
-
-    if (isDateRange(date)) {
-      if (date.from && date.to) {
-        const fromFormatted = format(date.from, "PPP");
-        const toFormatted = format(date.to, "PPP");
-        if (date.from.getTime() === date.to.getTime()) {
-          return fromFormatted;
-        }
-        return `${fromFormatted} - ${toFormatted}`;
-      }
-      return <span>Select date range</span>;
-    }
-    return format(date, "PPP");
-  };
-
-  return (
-    <div className="space-y-2">
-      <Label htmlFor="date">Date Requested</Label>
-      <Popover open={open} onOpenChange={setOpen} modal={false}>
-        <PopoverTrigger asChild>
-          <Button
-            id="date"
-            variant="outline"
-            className={cn(
-              "w-full justify-start text-left font-normal bg-secondary/50",
-              !date && "text-muted-foreground"
-            )}
-          >
-            <CalendarIcon className="mr-2 h-4 w-4" />
-            {getDateLabel()}
-          </Button>
-        </PopoverTrigger>
-        <PopoverContent forceMount className="w-auto p-0" align="start">
-          <Calendar
-            mode="range"
-            selected={getDateRangeForCalendar()}
-            onSelect={handleSelect}
-            initialFocus
-            className="p-3"
-          />
-        </PopoverContent>
-      </Popover>
-    </div>
-  );
 }
 
 export function ReportForm({ onReportGenerated }: ReportFormProps) {
