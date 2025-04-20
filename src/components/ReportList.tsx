@@ -82,7 +82,10 @@ export function ReportList({ reports }: ReportListProps) {
           const docsPdfUrl = getGoogleDocsPdfExportUrl(report.reportUrl);
           // Generate a more meaningful filename using date and location
           const safeLocation = report.location.replace(/[^a-zA-Z0-9-_]/g, "_");
-          const formattedDate = format(report.date, "yyyy-MM-dd");
+          const formattedDate = format(
+            report.date instanceof Date ? report.date : report.date.from, 
+            "yyyy-MM-dd"
+          );
           const fileName = `security-report-${formattedDate}-${safeLocation}.pdf`;
 
           // Choose the best URL for download:
@@ -148,7 +151,12 @@ export function ReportList({ reports }: ReportListProps) {
                       <Calendar className="h-4 w-4 text-muted-foreground mt-1 flex-shrink-0" />
                       <div>
                         <div className="text-xs text-muted-foreground">Date Requested</div>
-                        <div className="text-sm">{format(report.date, "MMM d, yyyy")}</div>
+                        <div className="text-sm">
+                          {format(
+                            report.date instanceof Date ? report.date : report.date.from, 
+                            "MMM d, yyyy"
+                          )}
+                        </div>
                       </div>
                     </div>
                     
