@@ -1,4 +1,3 @@
-
 import { useMemo } from "react";
 import { format } from "date-fns";
 import { Clock, Link, MapPin, Mail, Calendar, Download } from "lucide-react";
@@ -100,21 +99,43 @@ export function ReportList({ reports }: ReportListProps) {
       
       <div className="grid gap-4">
         {reports.map((report) => {
-          // Parse report.date safely before formatting
-          const validDate = parseReportDate(report.date);
-          
+          // Parse report.date which may be a Date or a range object
+          // Defensive parsing to handle empty strings from webhook response
+          let displayDate: React.ReactNode = <span className="text-red-500">Invalid date</span>;
+
+          if (report.date) {
+            if (
+              typeof report.date === "object" &&
+              "from" in report.date &&
+              "to" in report.date &&
+              report.date.from instanceof Date &&
+              report.date.to instanceof Date
+            ) {
+              // Handle case where from/to dates are empty strings or invalid Dates
+              const validFrom = report.date.from instanceof Date && !isNaN(report.date.from.getTime());
+              const validTo = report.date.to instanceof Date && !isNaN(report.date.to.getTime());
+
+              if (validFrom && validTo) {
+                // If from and to are the same day
+                if (report.date.from.getTime() === report.date.to.getTime()) {
+                  displayDate = format(report.date.from, "MMM d, yyyy");
+                } else {
+                  displayDate = `${format(report.date.from, "MMM d, yyyy")} - ${format(report.date.to, "MMM d, yyyy")}`;
+                }
+              }
+            } else if (report.date instanceof Date && !isNaN(report.date.getTime())) {
+              displayDate = format(report.date, "MMM d, yyyy");
+            }
+          }
+
           const directDownloadUrl = getGoogleDriveDownloadUrl(report.reportUrl);
           const docsPdfUrl = getGoogleDocsPdfExportUrl(report.reportUrl);
-          
-          // Generate a more meaningful filename using date and location
+
           const safeLocation = report.location.replace(/[^a-zA-Z0-9-_]/g, "_");
+          const validDate = parseReportDate(report.date);
           const formattedDate = validDate ? format(validDate, "yyyy-MM-dd") : "unknown-date";
           const fileName = `security-report-${formattedDate}-${safeLocation}.pdf`;
 
-          // Choose the best URL for download:
-          // prefer Docs PDF export if available,
-          // else use Drive direct download,
-          // else fallback to original URL
           const downloadUrl = docsPdfUrl || directDownloadUrl || report.reportUrl;
 
           return (
@@ -174,9 +195,7 @@ export function ReportList({ reports }: ReportListProps) {
                       <Calendar className="h-4 w-4 text-muted-foreground mt-1 flex-shrink-0" />
                       <div>
                         <div className="text-xs text-muted-foreground">Date Requested</div>
-                        <div className="text-sm">
-                          {validDate ? format(validDate, "MMM d, yyyy") : <span className="text-red-500">Invalid date</span>}
-                        </div>
+                        <div className="text-sm">{displayDate}</div>
                       </div>
                     </div>
                     
