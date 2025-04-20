@@ -44,11 +44,23 @@ export function DatePicker({ date, setDate }: DatePickerProps) {
   const [open, setOpen] = useState(false);
 
   const handleSelect: SelectRangeEventHandler = (range) => {
-    if (!range || !range.from || !range.to) {
+    // When user clears selection
+    if (!range) {
       setDate(undefined);
-    } else {
-      setDate({ from: range.from, to: range.to });
+      return;
     }
+    // If from date only is selected
+    if (range.from && !range.to) {
+      setDate({ from: range.from, to: range.from });
+      return;
+    }
+    // If both from and to exist
+    if (range.from && range.to) {
+      setDate({ from: range.from, to: range.to });
+      return;
+    }
+    // fallback to undefined
+    setDate(undefined);
   };
 
   return (
