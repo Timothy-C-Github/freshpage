@@ -64,8 +64,10 @@ export function ReportList({ reports }: ReportListProps) {
       <div className="grid gap-4">
         {reports.map((report) => {
           const directDownloadUrl = getGoogleDriveDownloadUrl(report.reportUrl);
-          // Filename to use for download, force .pdf extension
-          const fileName = (report.reportUrl.split('/').pop() || 'report') + '.pdf';
+          // Generate a more meaningful filename using date and location
+          const safeLocation = report.location.replace(/[^a-zA-Z0-9-_]/g, "_");
+          const formattedDate = format(report.date, "yyyy-MM-dd");
+          const fileName = `security-report-${formattedDate}-${safeLocation}.pdf`;
 
           return (
             <Card key={report.id} className="bg-card shadow-sm border border-border/40 overflow-hidden">
@@ -100,14 +102,13 @@ export function ReportList({ reports }: ReportListProps) {
                       className="flex items-center gap-1"
                       onClick={(e) => {
                         e.preventDefault();
-                        // Download from Google Drive direct download url if available, else original url
                         if (directDownloadUrl) {
                           downloadFile(directDownloadUrl, fileName);
                         } else {
                           downloadFile(report.reportUrl, fileName);
                         }
                       }}
-                      aria-label={`Download report ${report.reportUrl.split('/').pop()}`}
+                      aria-label={`Download report for ${safeLocation} on ${formattedDate}`}
                     >
                       <Download className="h-4 w-4" />
                       Download
