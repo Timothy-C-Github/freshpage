@@ -1,4 +1,4 @@
-import { useMemo } from "react";
+
 import { format } from "date-fns";
 import { Clock, Link, MapPin, Mail, Calendar, Download } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -6,10 +6,6 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { GeneratedReport } from "./ReportForm";
-
-interface ReportListProps {
-  reports: GeneratedReport[];
-}
 
 // Helper to convert Google Drive shared url to direct download url
 function getGoogleDriveDownloadUrl(url: string): string | null {
@@ -73,8 +69,7 @@ function parseReportDate(date: Date | string | unknown): Date | null {
     if (!isNaN(parsed.getTime())) {
       return parsed;
     }
-    // Sometimes the date strings can have ordinal suffixes like "23rd March 2025"
-    // We can try removing those suffixes and parse again:
+    // Remove ordinal suffixes if any and parse again
     const cleaned = date.replace(/(\d+)(st|nd|rd|th)/, "$1");
     const reparsed = new Date(cleaned);
     if (!isNaN(reparsed.getTime())) {
@@ -82,6 +77,10 @@ function parseReportDate(date: Date | string | unknown): Date | null {
     }
   }
   return null;
+}
+
+interface ReportListProps {
+  reports: GeneratedReport[];
 }
 
 export function ReportList({ reports }: ReportListProps) {
@@ -96,43 +95,21 @@ export function ReportList({ reports }: ReportListProps) {
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-semibold">Generated Reports</h2>
-      
+
       <div className="grid gap-4">
         {reports.map((report) => {
-          // Parse report.date which may be a Date or a range object
-          // Defensive parsing to handle empty strings from webhook response
+          // We expect report.date to be a Date or possibly a string, never a range now
           let displayDate: React.ReactNode = <span className="text-red-500">Invalid date</span>;
 
-          if (report.date) {
-            if (
-              typeof report.date === "object" &&
-              "from" in report.date &&
-              "to" in report.date &&
-              report.date.from instanceof Date &&
-              report.date.to instanceof Date
-            ) {
-              // Handle case where from/to dates are empty strings or invalid Dates
-              const validFrom = report.date.from instanceof Date && !isNaN(report.date.from.getTime());
-              const validTo = report.date.to instanceof Date && !isNaN(report.date.to.getTime());
-
-              if (validFrom && validTo) {
-                // If from and to are the same day
-                if (report.date.from.getTime() === report.date.to.getTime()) {
-                  displayDate = format(report.date.from, "MMM d, yyyy");
-                } else {
-                  displayDate = `${format(report.date.from, "MMM d, yyyy")} - ${format(report.date.to, "MMM d, yyyy")}`;
-                }
-              }
-            } else if (report.date instanceof Date && !isNaN(report.date.getTime())) {
-              displayDate = format(report.date, "MMM d, yyyy");
-            }
+          const validDate = parseReportDate(report.date);
+          if (validDate) {
+            displayDate = format(validDate, "MMM d, yyyy");
           }
 
           const directDownloadUrl = getGoogleDriveDownloadUrl(report.reportUrl);
           const docsPdfUrl = getGoogleDocsPdfExportUrl(report.reportUrl);
 
           const safeLocation = report.location.replace(/[^a-zA-Z0-9-_]/g, "_");
-          const validDate = parseReportDate(report.date);
           const formattedDate = validDate ? format(validDate, "yyyy-MM-dd") : "unknown-date";
           const fileName = `security-report-${formattedDate}-${safeLocation}.pdf`;
 
@@ -144,22 +121,22 @@ export function ReportList({ reports }: ReportListProps) {
                 <div className="flex items-center justify-between">
                   <Badge className="bg-security-600 text-white">Report Generated</Badge>
                   <div className="flex items-center text-xs text-muted-foreground">
-                    <Clock className="h-3 w-3 mr-1" /> 
-                    {validDate ? format(report.generatedAt, "h:mm a 'on' MMMM d, yyyy") : "Invalid date"}
+                    <Clock className="h-3 w-3 mr-1" />
+                    {format(report.generatedAt, "h:mm a 'on' MMMM d, yyyy")}
                   </div>
                 </div>
               </CardHeader>
-              
+
               <CardContent className="pt-2 pb-4 px-4">
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
                     <Link className="h-4 w-4 text-primary flex-shrink-0" />
                     <div className="flex-1">
                       <div className="text-sm font-medium">Report Link</div>
-                      <a 
-                        href={report.reportUrl} 
-                        target="_blank" 
-                        rel="noopener noreferrer" 
+                      <a
+                        href={report.reportUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
                         className="text-sm text-primary hover:underline break-all"
                       >
                         {report.reportUrl.split('/').pop()}
@@ -179,9 +156,9 @@ export function ReportList({ reports }: ReportListProps) {
                       Download
                     </Button>
                   </div>
-                  
+
                   <Separator className="my-1" />
-                  
+
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="flex items-start gap-2">
                       <MapPin className="h-4 w-4 text-muted-foreground mt-1 flex-shrink-0" />
@@ -190,7 +167,7 @@ export function ReportList({ reports }: ReportListProps) {
                         <div className="text-sm">{report.location}</div>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-start gap-2">
                       <Calendar className="h-4 w-4 text-muted-foreground mt-1 flex-shrink-0" />
                       <div>
@@ -198,7 +175,7 @@ export function ReportList({ reports }: ReportListProps) {
                         <div className="text-sm">{displayDate}</div>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-start gap-2">
                       <Mail className="h-4 w-4 text-muted-foreground mt-1 flex-shrink-0" />
                       <div>
