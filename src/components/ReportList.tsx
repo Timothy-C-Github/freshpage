@@ -26,6 +26,21 @@ function getGoogleDriveDownloadUrl(url: string): string | null {
   }
 }
 
+// Helper to convert Google Docs document "edit" url into PDF export url
+function getGoogleDocsPdfExportUrl(url: string): string | null {
+  try {
+    const docsRegex = /https:\/\/docs\.google\.com\/document\/d\/([a-zA-Z0-9_-]+)\/edit/;
+    const match = url.match(docsRegex);
+    if (match && match[1]) {
+      const fileId = match[1];
+      return `https://docs.google.com/document/d/${fileId}/export?format=pdf`;
+    }
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 // Function to programmatically download file from URL with fetch and a blob link
 async function downloadFile(url: string, filename: string) {
   try {
@@ -64,10 +79,17 @@ export function ReportList({ reports }: ReportListProps) {
       <div className="grid gap-4">
         {reports.map((report) => {
           const directDownloadUrl = getGoogleDriveDownloadUrl(report.reportUrl);
+          const docsPdfUrl = getGoogleDocsPdfExportUrl(report.reportUrl);
           // Generate a more meaningful filename using date and location
           const safeLocation = report.location.replace(/[^a-zA-Z0-9-_]/g, "_");
           const formattedDate = format(report.date, "yyyy-MM-dd");
           const fileName = `security-report-${formattedDate}-${safeLocation}.pdf`;
+
+          // Choose the best URL for download:
+          // prefer Docs PDF export if available,
+          // else use Drive direct download,
+          // else fallback to original URL
+          const downloadUrl = docsPdfUrl || directDownloadUrl || report.reportUrl;
 
           return (
             <Card key={report.id} className="bg-card shadow-sm border border-border/40 overflow-hidden">
@@ -102,11 +124,7 @@ export function ReportList({ reports }: ReportListProps) {
                       className="flex items-center gap-1"
                       onClick={(e) => {
                         e.preventDefault();
-                        if (directDownloadUrl) {
-                          downloadFile(directDownloadUrl, fileName);
-                        } else {
-                          downloadFile(report.reportUrl, fileName);
-                        }
+                        downloadFile(downloadUrl, fileName);
                       }}
                       aria-label={`Download report for ${safeLocation} on ${formattedDate}`}
                     >
@@ -151,4 +169,3 @@ export function ReportList({ reports }: ReportListProps) {
     </div>
   );
 }
-
