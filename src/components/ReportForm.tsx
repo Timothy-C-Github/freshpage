@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
@@ -68,7 +67,6 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
       const webhookUrl =
         "https://n8ern8ern8ern8er.app.n8n.cloud/webhook/64ae32ba-582c-4921-8452-5e0d81256d00";
 
-      // Prepare date parameters: if range, send both from and to, else send single date
       let dateQuery = "";
       if (isDateRange(date)) {
         if (!date.from || !date.to) {
@@ -97,7 +95,6 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
 
       const responseData = await response.json();
 
-      // Check required fields including new dateFrom/dateTo support
       const hasDateRange =
         typeof responseData.dateFrom === "string" && typeof responseData.dateTo === "string";
 
@@ -110,7 +107,6 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
         throw new Error("Incomplete data received from webhook");
       }
 
-      // Construct date property based on presence of date range or single date
       let reportDate: Date | { from: Date; to: Date };
 
       if (hasDateRange) {
@@ -154,7 +150,20 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
     }
   };
 
-  // Render date or range labels nicely
+  const handleDateSelect: SelectRangeEventHandler = (range) => {
+    if (!range || !range.from || !range.to) {
+      setDate(undefined);
+    } else {
+      setDate({ from: range.from, to: range.to });
+    }
+  };
+
+  const getDateRangeForCalendar = (): DateRange | undefined => {
+    if (!date) return undefined;
+    if (isDateRange(date)) return { from: date.from, to: date.to };
+    return { from: date, to: date };
+  };
+
   const getDateLabel = () => {
     if (!date) return <span>Select date</span>;
 
@@ -163,31 +172,13 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
         const fromFormatted = format(date.from, "PPP");
         const toFormatted = format(date.to, "PPP");
         if (date.from.getTime() === date.to.getTime()) {
-          return fromFormatted; // same day range treated as single day
+          return fromFormatted;
         }
         return `${fromFormatted} - ${toFormatted}`;
       }
       return <span>Select date range</span>;
     }
     return format(date, "PPP");
-  };
-
-  // Fix types for react-day-picker's onSelect for range mode
-  const handleDateSelect: SelectRangeEventHandler = (range) => {
-    if (!range || !range.from || !range.to) {
-      setDate(undefined);
-    } else {
-      // Important: setDate with proper values for from/to
-      setDate({ from: range.from, to: range.to });
-    }
-  };
-
-  // Always convert date state to DateRange for Calendar selected prop
-  const getDateRangeForCalendar = (): DateRange | undefined => {
-    if (!date) return undefined;
-    if (isDateRange(date)) return { from: date.from, to: date.to };
-    // If date is a single Date, convert to a range with same from/to
-    return { from: date, to: date };
   };
 
   return (
@@ -219,7 +210,7 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
               {getDateLabel()}
             </Button>
           </PopoverTrigger>
-          <PopoverContent className="w-auto p-0" align="start">
+          <PopoverContent className="w-auto p-0 pointer-events-auto" align="start">
             <Calendar
               mode="range"
               selected={getDateRangeForCalendar()}
@@ -249,4 +240,3 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
     </form>
   );
 }
-
