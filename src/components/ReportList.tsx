@@ -1,5 +1,5 @@
 
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 import { Clock, Link, MapPin, Mail, Calendar, Download } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -50,7 +50,7 @@ async function downloadFile(url: string, filename: string) {
     }
     const blob = await response.blob();
     const blobUrl = window.URL.createObjectURL(blob);
-    const a = document.createElement('a');
+    const a = document.createElement("a");
     a.href = blobUrl;
     a.download = filename;
     document.body.appendChild(a);
@@ -69,9 +69,12 @@ function extractSingleDate(date: Date | { from: Date; to?: Date }): Date {
     return new Date(0);
   }
   if (date instanceof Date) {
-    return date;
+    if (isValid(date)) {
+      return date;
+    }
+    return new Date(0);
   }
-  if ("from" in date && date.from instanceof Date) {
+  if ("from" in date && date.from instanceof Date && isValid(date.from)) {
     return date.from;
   }
   return new Date(0);
@@ -89,7 +92,7 @@ export function ReportList({ reports }: ReportListProps) {
   return (
     <div className="space-y-4">
       <h2 className="text-lg font-semibold">Generated Reports</h2>
-      
+
       <div className="grid gap-4">
         {reports.map((report) => {
           const directDownloadUrl = getGoogleDriveDownloadUrl(report.reportUrl);
@@ -116,7 +119,7 @@ export function ReportList({ reports }: ReportListProps) {
                   </div>
                 </div>
               </CardHeader>
-              
+
               <CardContent className="pt-2 pb-4 px-4">
                 <div className="space-y-3">
                   <div className="flex items-center gap-2">
@@ -129,7 +132,7 @@ export function ReportList({ reports }: ReportListProps) {
                         rel="noopener noreferrer" 
                         className="text-sm text-primary hover:underline break-all"
                       >
-                        {report.reportUrl.split('/').pop()}
+                        {report.reportUrl.split("/").pop()}
                       </a>
                     </div>
                     <Button
@@ -146,9 +149,9 @@ export function ReportList({ reports }: ReportListProps) {
                       Download
                     </Button>
                   </div>
-                  
+
                   <Separator className="my-1" />
-                  
+
                   <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                     <div className="flex items-start gap-2">
                       <MapPin className="h-4 w-4 text-muted-foreground mt-1 flex-shrink-0" />
@@ -157,7 +160,7 @@ export function ReportList({ reports }: ReportListProps) {
                         <div className="text-sm">{report.location}</div>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-start gap-2">
                       <Calendar className="h-4 w-4 text-muted-foreground mt-1 flex-shrink-0" />
                       <div>
@@ -165,7 +168,7 @@ export function ReportList({ reports }: ReportListProps) {
                         <div className="text-sm">{format(extractSingleDate(report.date), "MMM d, yyyy")}</div>
                       </div>
                     </div>
-                    
+
                     <div className="flex items-start gap-2">
                       <Mail className="h-4 w-4 text-muted-foreground mt-1 flex-shrink-0" />
                       <div>
@@ -183,3 +186,4 @@ export function ReportList({ reports }: ReportListProps) {
     </div>
   );
 }
+

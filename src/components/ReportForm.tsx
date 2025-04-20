@@ -1,7 +1,7 @@
 
 import { useState } from "react";
 import { CalendarIcon } from "lucide-react";
-import { format } from "date-fns";
+import { format, isValid } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
@@ -106,11 +106,16 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
         throw new Error("Incomplete data received from webhook");
       }
 
+      const reportDate = new Date(responseData.date);
+      if (!isValid(reportDate)) {
+        throw new Error("Received invalid date from webhook");
+      }
+
       // We assume webhook's response date is still a single date string.
       const newReport: GeneratedReport = {
         id: Date.now().toString(),
         location: responseData.location,
-        date: new Date(responseData.date),
+        date: reportDate,
         email: responseData.email,
         reportUrl: responseData.urlOfSecurityReport,
         generatedAt: new Date(),
@@ -192,7 +197,8 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
           <PopoverContent className="w-auto p-0" align="start">
             <Calendar
               mode="range"
-              selected={date && "from" in (date ?? {}) ? date : undefined}
+              // Only pass DateRange to selected as required by type
+              selected={isDateRange(date) ? date : undefined}
               onSelect={(selected) => {
                 // selected is DateRange where to might be undefined
                 if (!selected) {
