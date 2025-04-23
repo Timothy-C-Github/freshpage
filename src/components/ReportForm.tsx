@@ -9,7 +9,6 @@ import { cn } from "@/lib/utils";
 export interface FormData {
   location: string;
   date: "Today" | "Next 7 Days" | "Next 14 Days" | "Next 30 Days" | "";
-  email: string;
 }
 
 export interface GeneratedReport extends FormData {
@@ -24,9 +23,10 @@ interface ReportFormProps {
 
 export function ReportForm({ onReportGenerated }: ReportFormProps) {
   const [location, setLocation] = useState("");
+  // Fix initial state for date to "Today" for proper default selection
   const [date, setDate] = useState<
     "Today" | "Next 7 Days" | "Next 14 Days" | "Next 30 Days" | ""
-  >("");
+  >("Today");
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -43,6 +43,8 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
       });
       return;
     }
+
+    console.log("Submitting form with date:", date);
 
     try {
       setIsLoading(true);
@@ -90,7 +92,7 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
       onReportGenerated(newReport);
 
       setLocation("");
-      setDate("");
+      setDate("Today");
       setEmail("");
 
       toast({
