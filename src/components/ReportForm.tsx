@@ -142,13 +142,20 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
             "w-full rounded-md border border-input bg-secondary/50 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
           )}
           required
+          aria-label="Date Requested"
         >
-          {/* Removed the placeholder 'Select a date range' option as requested */}
+          {/* No placeholder option here, only valid date ranges */}
           <option value="Today">Today</option>
           <option value="Next 7 Days">Next 7 Days</option>
           <option value="Next 14 Days">Next 14 Days</option>
           <option value="Next 30 Days">Next 30 Days</option>
         </select>
+        {/* Show placeholder text separately outside the select on empty date */}
+        {date === "" && (
+          <div className="mt-1 text-sm text-muted-foreground select-none pointer-events-none">
+            Select a date range
+          </div>
+        )}
       </div>
 
       <div className="space-y-2">
