@@ -1,18 +1,14 @@
 
 import { useState } from "react";
-import { format } from "date-fns";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
-import type { DateSelection } from "@/utils/dateUtils";
-import { isDateRange } from "@/utils/dateUtils";
-import { DatePicker } from "./DatePicker";
 
 export interface FormData {
   location: string;
-  date: Date | { from: Date; to: Date };
+  date: "Today" | "Next 7 Days" | "Next 14 Days" | "Next 30 Days" | "";
   email: string;
 }
 
@@ -28,13 +24,11 @@ interface ReportFormProps {
 
 export function ReportForm({ onReportGenerated }: ReportFormProps) {
   const [location, setLocation] = useState("");
-  const [date, setDate] = useState<DateSelection>(undefined);
+  const [date, setDate] = useState<"Today" | "Next 7 Days" | "Next 14 Days" | "Next 30 Days" | "">("");
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
   const { toast } = useToast();
-
-  const formatDateForWebhook = (date: Date) => format(date, "yyyy-MM-dd");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -54,16 +48,9 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
       const webhookUrl =
         "https://n8ern8ern8ern8er.app.n8n.cloud/webhook/64ae32ba-582c-4921-8452-5e0d81256d00";
 
-      let dateQuery = "";
-      // Since we no longer expect dateFrom and dateTo, we always send date(s) flattened
-      if (isDateRange(date)) {
-        if (!date.from || !date.to) {
-          throw new Error("Please select a valid date range.");
-        }
-        dateQuery = `&dateFrom=${encodeURIComponent(formatDateForWebhook(date.from))}&dateTo=${encodeURIComponent(formatDateForWebhook(date.to))}`;
-      } else {
-        dateQuery = `&date=${encodeURIComponent(formatDateForWebhook(date))}`;
-      }
+      // Instead of dateFrom and dateTo, send the date option in query param
+      // e.g. &dateOption=Today, Next 7 Days, etc.
+      const dateQuery = `&dateOption=${encodeURIComponent(date)}`;
 
       const response = await fetch(
         `${webhookUrl}?location=${encodeURIComponent(location)}${dateQuery}&email=${encodeURIComponent(email)}`,
@@ -89,13 +76,10 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
         throw new Error("Incomplete data received from webhook");
       }
 
-      // Use the date sent from the form as reportDate directly
-      const reportDate: Date | { from: Date; to: Date } = date;
-
       const newReport: GeneratedReport = {
         id: Date.now().toString(),
         location: responseData.location,
-        date: reportDate,
+        date: date,
         email: responseData.email,
         reportUrl: responseData.urlOfSecurityReport,
         generatedAt: new Date(),
@@ -104,7 +88,7 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
       onReportGenerated(newReport);
 
       setLocation("");
-      setDate(undefined);
+      setDate("");
       setEmail("");
 
       toast({
@@ -137,7 +121,33 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
         />
       </div>
 
-      <DatePicker date={date} setDate={setDate} />
+      <div className="space-y-2">
+        <Label htmlFor="date">Date Requested</Label>
+        <select
+          id="date"
+          value={date}
+          onChange={(e) =>
+            setDate(e.target.value as
+              | "Today"
+              | "Next 7 Days"
+              | "Next 14 Days"
+              | "Next 30 Days"
+              | "")
+          }
+          className={cn(
+            "w-full rounded-md border border-input bg-secondary/50 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
+          )}
+          required
+        >
+          <option value="" disabled>
+            Select a date range
+          </option>
+          <option value="Today">Today</option>
+          <option value="Next 7 Days">Next 7 Days</option>
+          <option value="Next 14 Days">Next 14 Days</option>
+          <option value="Next 30 Days">Next 30 Days</option>
+        </select>
+      </div>
 
       <div className="space-y-2">
         <Label htmlFor="email">Email</Label>
