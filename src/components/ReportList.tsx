@@ -1,4 +1,3 @@
-
 import { format } from "date-fns";
 import { Clock, Link, MapPin, Mail, Calendar, Download } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -93,12 +92,17 @@ export function ReportList({ reports }: ReportListProps) {
 
       <div className="grid gap-4">
         {reports.map((report) => {
-          let displayDate: React.ReactNode = <span className="text-red-500">Invalid date</span>;
+          let displayDate: React.ReactNode;
 
-          // report.date can be a Date or { from, to }
           if (!report.date) {
             displayDate = <span className="text-red-500">Date missing</span>;
-          } else if ('from' in report.date && 'to' in report.date) {
+          } else if (
+            typeof report.date === "object" &&
+            report.date !== null &&
+            'from' in report.date &&
+            'to' in report.date
+          ) {
+            // Defensive check for date range object
             if (report.date.from && report.date.to) {
               const fromFormatted = format(report.date.from, "MMM d, yyyy");
               const toFormatted = format(report.date.to, "MMM d, yyyy");
@@ -108,11 +112,15 @@ export function ReportList({ reports }: ReportListProps) {
             } else {
               displayDate = <span className="text-red-500">Invalid date range</span>;
             }
+          } else if (typeof report.date === 'string') {
+            // For string type dates (e.g., "Today", "Next 7 Days", ...)
+            displayDate = report.date;
           } else {
-            // single date
             const validDate = parseReportDate(report.date);
             if (validDate) {
               displayDate = format(validDate, "MMM d, yyyy");
+            } else {
+              displayDate = <span className="text-red-500">Invalid date</span>;
             }
           }
 
@@ -120,19 +128,24 @@ export function ReportList({ reports }: ReportListProps) {
           const docsPdfUrl = getGoogleDocsPdfExportUrl(report.reportUrl);
 
           const safeLocation = report.location.replace(/[^a-zA-Z0-9-_]/g, "_");
-          const formattedDate =
-            typeof report.date === 'object' && 'from' in report.date && report.date.from
-              ? format(report.date.from, "yyyy-MM-dd")
-              : typeof report.date === 'object' && 'to' in report.date && report.date.to
-              ? format(report.date.to, "yyyy-MM-dd")
-              : formatReportDate(report.date);
-          function formatReportDate(date: Date | { from: Date; to: Date } | undefined): string {
-            if (!date) return "unknown-date";
-            if (date instanceof Date) {
-              return format(date, "yyyy-MM-dd");
-            }
-            return "unknown-date";
-          }
+
+          // Prepare formatted date string for filename; fallback to raw string if not a Date or range
+          let formattedDate = "unknown-date";
+          if (typeof report.date === "string" && report.date !== "") {
+            // Convert known strings to a specific standard date string or keep as is for filename
+            // For simplicity here, just replace spaces with dashes and lowercase
+            formattedDate = report.date.toLowerCase().replace(/\s+/g, "-");
+          } else if (
+            typeof report.date === "object" &&
+            report.date !== null &&
+            'from' in report.date &&
+            report.date.from instanceof Date
+          ) {
+            formattedDate = format(report.date.from, "yyyy-MM-dd");
+          } else if (report.date instanceof Date) {
+            formattedDate = format(report.date, "yyyy-MM-dd");
+          } 
+
           const fileName = `security-report-${formattedDate}-${safeLocation}.pdf`;
 
           const downloadUrl = docsPdfUrl || directDownloadUrl || report.reportUrl;
