@@ -24,7 +24,9 @@ interface ReportFormProps {
 
 export function ReportForm({ onReportGenerated }: ReportFormProps) {
   const [location, setLocation] = useState("");
-  const [date, setDate] = useState<"Today" | "Next 7 Days" | "Next 14 Days" | "Next 30 Days" | "">("");
+  const [date, setDate] = useState<
+    "Today" | "Next 7 Days" | "Next 14 Days" | "Next 30 Days" | ""
+  >("");
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
@@ -48,12 +50,12 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
       const webhookUrl =
         "https://n8ern8ern8ern8er.app.n8n.cloud/webhook/64ae32ba-582c-4921-8452-5e0d81256d00";
 
-      // Instead of dateFrom and dateTo, send the date option in query param
-      // e.g. &dateOption=Today, Next 7 Days, etc.
       const dateQuery = `&dateOption=${encodeURIComponent(date)}`;
 
       const response = await fetch(
-        `${webhookUrl}?location=${encodeURIComponent(location)}${dateQuery}&email=${encodeURIComponent(email)}`,
+        `${webhookUrl}?location=${encodeURIComponent(
+          location
+        )}${dateQuery}&email=${encodeURIComponent(email)}`,
         {
           method: "GET",
           headers: {
@@ -127,21 +129,21 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
           id="date"
           value={date}
           onChange={(e) =>
-            setDate(e.target.value as
-              | "Today"
-              | "Next 7 Days"
-              | "Next 14 Days"
-              | "Next 30 Days"
-              | "")
+            setDate(
+              e.target.value as
+                | "Today"
+                | "Next 7 Days"
+                | "Next 14 Days"
+                | "Next 30 Days"
+                | ""
+            )
           }
           className={cn(
             "w-full rounded-md border border-input bg-secondary/50 px-3 py-2 text-sm shadow-sm focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2"
           )}
           required
         >
-          <option value="" disabled>
-            Select a date range
-          </option>
+          {/* Removed the placeholder 'Select a date range' option as requested */}
           <option value="Today">Today</option>
           <option value="Next 7 Days">Next 7 Days</option>
           <option value="Next 14 Days">Next 14 Days</option>
@@ -167,3 +169,4 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
     </form>
   );
 }
+
