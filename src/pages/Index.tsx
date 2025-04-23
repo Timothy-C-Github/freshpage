@@ -13,14 +13,17 @@ const Index = () => {
 
   return (
     <div className="min-h-screen bg-background text-foreground">
-      {/* Header with logo */}
+      {/* Header with logo and title */}
       <header className="border-b border-border/40 p-4">
         <div className="container mx-auto flex items-center">
           <img 
             src="https://guk.co.uk/wp-content/uploads/2024/03/GUK-grouplogo.png" 
             alt="GUK Group Logo" 
-            className="h-12"
+            className="h-12 mr-4"
           />
+          <div className="text-xl font-bold text-primary">
+            Guarding UK Security Services
+          </div>
           <div className="ml-auto text-sm font-medium">Security Report System</div>
         </div>
       </header>
@@ -69,4 +72,3 @@ const Index = () => {
 };
 
 export default Index;
-
