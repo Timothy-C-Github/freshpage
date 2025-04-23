@@ -61,7 +61,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="border-t border-border/40 mt-auto py-4">
         <div className="container mx-auto text-center text-xs text-muted-foreground">
-          GUK Group Security Report System &copy; {new Date().getFullYear()}
+          Guarding UK - Sentinel Report System &copy; {new Date().getFullYear()}
         </div>
       </footer>
     </div>
@@ -69,3 +69,4 @@ const Index = () => {
 };
 
 export default Index;
+
