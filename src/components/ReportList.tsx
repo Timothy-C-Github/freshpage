@@ -1,3 +1,4 @@
+
 import { format } from "date-fns";
 import { Clock, Link, MapPin, Mail, Calendar, Download } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -96,29 +97,33 @@ export function ReportList({ reports }: ReportListProps) {
 
           if (!report.date) {
             displayDate = <span className="text-red-500">Date missing</span>;
-          } else if (
+          } 
+          // Only if report.date is an object and not null
+          else if (
             typeof report.date === "object" &&
             report.date !== null &&
             'from' in report.date &&
             'to' in report.date
           ) {
             // Defensive check for date range object
-            if (report.date.from && report.date.to) {
-              const fromFormatted = format(report.date.from, "MMM d, yyyy");
-              const toFormatted = format(report.date.to, "MMM d, yyyy");
-              displayDate = report.date.from.getTime() === report.date.to.getTime()
+            const dateRange = report.date as { from: Date; to: Date };
+            if (dateRange.from && dateRange.to) {
+              const fromFormatted = format(dateRange.from, "MMM d, yyyy");
+              const toFormatted = format(dateRange.to, "MMM d, yyyy");
+              displayDate = dateRange.from.getTime() === dateRange.to.getTime()
                 ? fromFormatted
                 : `${fromFormatted} - ${toFormatted}`;
             } else {
               displayDate = <span className="text-red-500">Invalid date range</span>;
             }
-          } else if (typeof report.date === 'string') {
-            // For string type dates (e.g., "Today", "Next 7 Days", ...)
+          } else if(typeof report.date === 'string') {
+            // Show the string directly
             displayDate = report.date;
           } else {
-            const validDate = parseReportDate(report.date);
-            if (validDate) {
-              displayDate = format(validDate, "MMM d, yyyy");
+            // For single Date or unknown format
+            const maybeDate = report.date;
+            if (maybeDate instanceof Date && !isNaN(maybeDate.getTime())) {
+              displayDate = format(maybeDate, "MMM d, yyyy");
             } else {
               displayDate = <span className="text-red-500">Invalid date</span>;
             }
