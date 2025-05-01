@@ -1,4 +1,3 @@
-
 import { format } from "date-fns";
 import { Clock, Link, MapPin, Mail, Calendar, Download } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";

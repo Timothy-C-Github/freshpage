@@ -15,6 +15,7 @@ export interface GeneratedReport extends FormData {
   id: string;
   reportUrl: string;
   generatedAt: Date;
+  email: string; // Adding email to the GeneratedReport interface
 }
 
 interface ReportFormProps {
@@ -23,7 +24,6 @@ interface ReportFormProps {
 
 export function ReportForm({ onReportGenerated }: ReportFormProps) {
   const [location, setLocation] = useState("");
-  // Fix initial state for date to "Today" for proper default selection
   const [date, setDate] = useState<
     "Today" | "Next 7 Days" | "Next 14 Days" | "Next 30 Days" | ""
   >("Today");
@@ -50,7 +50,7 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
       setIsLoading(true);
 
       const webhookUrl =
-        "https://n8ern8ern8ern8er.app.n8n.cloud/webhook/64ae32ba-582c-4921-8452-5e0d81256d00";
+        "https://n8tionb8tion.app.n8n.cloud/webhook/64ae32ba-582c-4921-8452-5e0d81256d00";
 
       const dateQuery = `&dateOption=${encodeURIComponent(date)}`;
 
@@ -145,7 +145,6 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
           )}
           required
         >
-          {/* Removed the placeholder 'Select a date range' option as requested */}
           <option value="Today">Today</option>
           <option value="Next 7 Days">Next 7 Days</option>
           <option value="Next 14 Days">Next 14 Days</option>
@@ -171,4 +170,3 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
     </form>
   );
 }
-
