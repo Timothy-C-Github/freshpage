@@ -6,16 +6,18 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
 
+export type DateOption = "Today" | "Next 7 Days" | "Next 14 Days" | "Next 30 Days" | "";
+
 export interface FormData {
   location: string;
-  date: "Today" | "Next 7 Days" | "Next 14 Days" | "Next 30 Days" | "";
+  date: DateOption;
 }
 
 export interface GeneratedReport extends FormData {
   id: string;
   reportUrl: string;
   generatedAt: Date;
-  email: string; // Adding email to the GeneratedReport interface
+  email: string;
 }
 
 interface ReportFormProps {
@@ -24,9 +26,7 @@ interface ReportFormProps {
 
 export function ReportForm({ onReportGenerated }: ReportFormProps) {
   const [location, setLocation] = useState("");
-  const [date, setDate] = useState<
-    "Today" | "Next 7 Days" | "Next 14 Days" | "Next 30 Days" | ""
-  >("Today");
+  const [date, setDate] = useState<DateOption>("Today");
   const [email, setEmail] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 

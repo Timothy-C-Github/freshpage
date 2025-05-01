@@ -5,7 +5,7 @@ import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { GeneratedReport } from "./ReportForm";
+import { GeneratedReport, DateOption } from "./ReportForm";
 
 function getGoogleDriveDownloadUrl(url: string): string | null {
   try {
@@ -56,6 +56,8 @@ async function downloadFile(url: string, filename: string) {
   }
 }
 
+// This function is no longer needed as we're simplifying date handling
+// to match our actual data model
 function parseReportDate(date: Date | string | unknown): Date | null {
   if (date instanceof Date && !isNaN(date.getTime())) {
     return date;
@@ -78,18 +80,6 @@ interface ReportListProps {
   reports: GeneratedReport[];
 }
 
-// Define a type guard for checking date range objects
-function isDateRangeObject(date: any): date is { from: Date; to: Date } {
-  return (
-    typeof date === "object" &&
-    date !== null &&
-    'from' in date &&
-    'to' in date &&
-    date.from instanceof Date &&
-    date.to instanceof Date
-  );
-}
-
 export function ReportList({ reports }: ReportListProps) {
   if (reports.length === 0) {
     return (
@@ -105,47 +95,20 @@ export function ReportList({ reports }: ReportListProps) {
 
       <div className="grid gap-4">
         {reports.map((report) => {
-          let displayDate: React.ReactNode;
-
-          if (!report.date) {
-            displayDate = <span className="text-red-500">Date missing</span>;
-          } 
-          // Check if date is a date range object using the type guard
-          else if (isDateRangeObject(report.date)) {
-            const fromFormatted = format(report.date.from, "MMM d, yyyy");
-            const toFormatted = format(report.date.to, "MMM d, yyyy");
-            displayDate = report.date.from.getTime() === report.date.to.getTime()
-              ? fromFormatted
-              : `${fromFormatted} - ${toFormatted}`;
-          } 
-          // Handle string dates
-          else if (typeof report.date === 'string') {
-            displayDate = report.date;
-          } 
-          // Handle Date object
-          else if (report.date instanceof Date && !isNaN(report.date.getTime())) {
-            displayDate = format(report.date, "MMM d, yyyy");
-          } 
-          else {
-            displayDate = <span className="text-red-500">Invalid date</span>;
-          }
+          // Since we updated the GeneratedReport interface, date is now always a string
+          // of type DateOption ("Today", "Next 7 Days", etc.)
+          let displayDate: React.ReactNode = report.date || <span className="text-red-500">Date missing</span>;
 
           const directDownloadUrl = getGoogleDriveDownloadUrl(report.reportUrl);
           const docsPdfUrl = getGoogleDocsPdfExportUrl(report.reportUrl);
 
           const safeLocation = report.location.replace(/[^a-zA-Z0-9-_]/g, "_");
-
-          // Prepare formatted date string for filename; fallback to raw string if not a Date or range
-          let formattedDate = "unknown-date";
-          if (typeof report.date === "string" && report.date !== "") {
-            formattedDate = report.date.toLowerCase().replace(/\s+/g, "-");
-          } 
-          else if (isDateRangeObject(report.date)) {
-            formattedDate = format(report.date.from, "yyyy-MM-dd");
-          } 
-          else if (report.date instanceof Date && !isNaN(report.date.getTime())) {
-            formattedDate = format(report.date, "yyyy-MM-dd");
-          }
+          
+          // For the filename, format the current date since the date in our model is just a string option
+          const currentDate = format(new Date(), "yyyy-MM-dd");
+          const formattedDate = report.date 
+            ? report.date.toLowerCase().replace(/\s+/g, "-")
+            : currentDate;
 
           const fileName = `security-report-${formattedDate}-${safeLocation}.pdf`;
 
