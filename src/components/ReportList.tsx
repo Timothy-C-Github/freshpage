@@ -1,3 +1,4 @@
+
 import { format } from "date-fns";
 import { Clock, Link, MapPin, Mail, Calendar, Download } from "lucide-react";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
@@ -77,6 +78,18 @@ interface ReportListProps {
   reports: GeneratedReport[];
 }
 
+// Define a type guard for checking date range objects
+function isDateRangeObject(date: any): date is { from: Date; to: Date } {
+  return (
+    typeof date === "object" &&
+    date !== null &&
+    'from' in date &&
+    'to' in date &&
+    date.from instanceof Date &&
+    date.to instanceof Date
+  );
+}
+
 export function ReportList({ reports }: ReportListProps) {
   if (reports.length === 0) {
     return (
@@ -97,35 +110,24 @@ export function ReportList({ reports }: ReportListProps) {
           if (!report.date) {
             displayDate = <span className="text-red-500">Date missing</span>;
           } 
-          // Only if report.date is an object and not null
-          else if (
-            typeof report.date === "object" &&
-            report.date !== null &&
-            'from' in report.date &&
-            'to' in report.date
-          ) {
-            // Defensive check for date range object
-            const dateRange = report.date as { from: Date; to: Date };
-            if (dateRange.from && dateRange.to) {
-              const fromFormatted = format(dateRange.from, "MMM d, yyyy");
-              const toFormatted = format(dateRange.to, "MMM d, yyyy");
-              displayDate = dateRange.from.getTime() === dateRange.to.getTime()
-                ? fromFormatted
-                : `${fromFormatted} - ${toFormatted}`;
-            } else {
-              displayDate = <span className="text-red-500">Invalid date range</span>;
-            }
-          } else if(typeof report.date === 'string') {
-            // Show the string directly
+          // Check if date is a date range object using the type guard
+          else if (isDateRangeObject(report.date)) {
+            const fromFormatted = format(report.date.from, "MMM d, yyyy");
+            const toFormatted = format(report.date.to, "MMM d, yyyy");
+            displayDate = report.date.from.getTime() === report.date.to.getTime()
+              ? fromFormatted
+              : `${fromFormatted} - ${toFormatted}`;
+          } 
+          // Handle string dates
+          else if (typeof report.date === 'string') {
             displayDate = report.date;
-          } else {
-            // For single Date or unknown format
-            const maybeDate = report.date;
-            if (maybeDate instanceof Date && !isNaN(maybeDate.getTime())) {
-              displayDate = format(maybeDate, "MMM d, yyyy");
-            } else {
-              displayDate = <span className="text-red-500">Invalid date</span>;
-            }
+          } 
+          // Handle Date object
+          else if (report.date instanceof Date && !isNaN(report.date.getTime())) {
+            displayDate = format(report.date, "MMM d, yyyy");
+          } 
+          else {
+            displayDate = <span className="text-red-500">Invalid date</span>;
           }
 
           const directDownloadUrl = getGoogleDriveDownloadUrl(report.reportUrl);
@@ -136,19 +138,14 @@ export function ReportList({ reports }: ReportListProps) {
           // Prepare formatted date string for filename; fallback to raw string if not a Date or range
           let formattedDate = "unknown-date";
           if (typeof report.date === "string" && report.date !== "") {
-            // Convert known strings to a specific standard date string or keep as is for filename
-            // For simplicity here, just replace spaces with dashes and lowercase
             formattedDate = report.date.toLowerCase().replace(/\s+/g, "-");
-          } else if (
-            typeof report.date === "object" &&
-            report.date !== null &&
-            'from' in report.date &&
-            report.date.from instanceof Date
-          ) {
-            formattedDate = format(report.date.from, "yyyy-MM-dd");
-          } else if (report.date instanceof Date) {
-            formattedDate = format(report.date, "yyyy-MM-dd");
           } 
+          else if (isDateRangeObject(report.date)) {
+            formattedDate = format(report.date.from, "yyyy-MM-dd");
+          } 
+          else if (report.date instanceof Date && !isNaN(report.date.getTime())) {
+            formattedDate = format(report.date, "yyyy-MM-dd");
+          }
 
           const fileName = `security-report-${formattedDate}-${safeLocation}.pdf`;
 
