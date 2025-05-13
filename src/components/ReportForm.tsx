@@ -49,7 +49,7 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
     try {
       setIsLoading(true);
 
-      const webhookUrl = "https://n8tionb8tion.app.n8n.cloud/webhook/64ae32ba-582c-4921-8452-5e0d81256d00";
+      const webhookUrl = "https://primary-production-b5ec.up.railway.app/webhook/64ae32ba-582c-4921-8452-5e0d81256d00";
 
       const dateQuery = `&dateOption=${encodeURIComponent(date)}`;
 
