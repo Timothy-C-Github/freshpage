@@ -10,7 +10,11 @@ import {
 } from "@/components/ui/table";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { format } from "date-fns";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Download, Filter } from "lucide-react";
+import { format, isValid, parseISO } from "date-fns";
 
 interface Document {
   id: number;
@@ -20,8 +24,15 @@ interface Document {
 
 export const DocumentsViewer = () => {
   const [documents, setDocuments] = useState<Document[]>([]);
+  const [filteredDocuments, setFilteredDocuments] = useState<Document[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [filters, setFilters] = useState({
+    location: "",
+    type: "",
+    source: "",
+    content: ""
+  });
 
   useEffect(() => {
     fetchDocuments();
@@ -38,6 +49,7 @@ export const DocumentsViewer = () => {
 
       if (error) throw error;
       setDocuments(data || []);
+      setFilteredDocuments(data || []);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
@@ -45,22 +57,99 @@ export const DocumentsViewer = () => {
     }
   };
 
+  useEffect(() => {
+    let filtered = documents;
+
+    if (filters.location) {
+      filtered = filtered.filter(doc => 
+        doc.metadata?.location?.toLowerCase().includes(filters.location.toLowerCase())
+      );
+    }
+    if (filters.type) {
+      filtered = filtered.filter(doc => 
+        doc.metadata?.type?.toLowerCase().includes(filters.type.toLowerCase())
+      );
+    }
+    if (filters.source) {
+      filtered = filtered.filter(doc => 
+        doc.metadata?.source?.toLowerCase().includes(filters.source.toLowerCase())
+      );
+    }
+    if (filters.content) {
+      filtered = filtered.filter(doc => 
+        doc.content?.toLowerCase().includes(filters.content.toLowerCase())
+      );
+    }
+
+    setFilteredDocuments(filtered);
+  }, [documents, filters]);
+
+  const exportToCSV = () => {
+    const csvContent = [
+      ["ID", "Content", "Location", "Date", "Time", "Type", "Source"],
+      ...filteredDocuments.map(doc => {
+        const metadata = doc.metadata || {};
+        const dateTime = parseDateTime(metadata.date);
+        return [
+          doc.id,
+          `"${(doc.content || '').replace(/"/g, '""')}"`,
+          metadata.location || '',
+          dateTime.date,
+          dateTime.time,
+          metadata.type || '',
+          metadata.source || ''
+        ];
+      })
+    ].map(row => row.join(",")).join("\n");
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `documents-export-${format(new Date(), 'yyyy-MM-dd')}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
+  const parseDateTime = (dateString: string) => {
+    if (!dateString) return { date: '', time: '' };
+    
+    try {
+      const date = parseISO(dateString);
+      if (isValid(date)) {
+        return {
+          date: format(date, 'yyyy-MM-dd'),
+          time: format(date, 'HH:mm:ss')
+        };
+      }
+    } catch (e) {
+      // If parsing fails, try to extract date/time manually
+    }
+    
+    // Fallback: just return the original string split if it looks like a date
+    if (dateString.includes('T') || dateString.includes(' ')) {
+      const parts = dateString.split(/[T ]/);
+      return {
+        date: parts[0] || '',
+        time: parts[1]?.split('.')[0] || ''
+      };
+    }
+    
+    return { date: dateString, time: '' };
+  };
+
   const truncateContent = (content: string, maxLength: number = 100) => {
     if (content.length <= maxLength) return content;
     return content.substring(0, maxLength) + '...';
   };
 
-  const getMetadataInfo = (metadata: any) => {
-    if (!metadata) return null;
-    
-    // Extract useful info from metadata excluding scores
-    const info = [];
-    if (metadata.location) info.push(`Location: ${metadata.location}`);
-    if (metadata.date) info.push(`Date: ${metadata.date}`);
-    if (metadata.type) info.push(`Type: ${metadata.type}`);
-    if (metadata.source) info.push(`Source: ${metadata.source}`);
-    
-    return info.length > 0 ? info : null;
+  const clearFilters = () => {
+    setFilters({
+      location: "",
+      type: "",
+      source: "",
+      content: ""
+    });
   };
 
   if (loading) {
@@ -96,60 +185,118 @@ export const DocumentsViewer = () => {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Recent Documents</CardTitle>
-        <CardDescription>
-          Last 20 entries from the documents database
-        </CardDescription>
+        <div className="flex justify-between items-start">
+          <div>
+            <CardTitle>Recent Documents</CardTitle>
+            <CardDescription>
+              {filteredDocuments.length} of {documents.length} entries shown
+            </CardDescription>
+          </div>
+          <Button onClick={exportToCSV} size="sm" className="flex items-center gap-2">
+            <Download className="h-4 w-4" />
+            Export CSV
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
-        {documents.length === 0 ? (
-          <div className="text-center py-8 text-muted-foreground">
-            No documents found
+        <div className="space-y-4">
+          {/* Filters */}
+          <div className="flex flex-wrap gap-2 p-4 bg-muted/50 rounded-lg">
+            <div className="flex items-center gap-2 text-sm font-medium">
+              <Filter className="h-4 w-4" />
+              Filters:
+            </div>
+            <Input
+              placeholder="Filter by content..."
+              value={filters.content}
+              onChange={(e) => setFilters(prev => ({ ...prev, content: e.target.value }))}
+              className="w-48"
+            />
+            <Input
+              placeholder="Filter by location..."
+              value={filters.location}
+              onChange={(e) => setFilters(prev => ({ ...prev, location: e.target.value }))}
+              className="w-48"
+            />
+            <Input
+              placeholder="Filter by type..."
+              value={filters.type}
+              onChange={(e) => setFilters(prev => ({ ...prev, type: e.target.value }))}
+              className="w-48"
+            />
+            <Input
+              placeholder="Filter by source..."
+              value={filters.source}
+              onChange={(e) => setFilters(prev => ({ ...prev, source: e.target.value }))}
+              className="w-48"
+            />
+            <Button variant="outline" size="sm" onClick={clearFilters}>
+              Clear All
+            </Button>
           </div>
-        ) : (
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="w-16">ID</TableHead>
-                  <TableHead>Content</TableHead>
-                  <TableHead>Details</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {documents.map((doc) => {
-                  const metadataInfo = getMetadataInfo(doc.metadata);
-                  
-                  return (
-                    <TableRow key={doc.id}>
-                      <TableCell className="font-mono text-sm">
-                        {doc.id}
-                      </TableCell>
-                      <TableCell className="max-w-md">
-                        <div className="space-y-1">
+
+          {filteredDocuments.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              {documents.length === 0 ? "No documents found" : "No documents match your filters"}
+            </div>
+          ) : (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-16">ID</TableHead>
+                    <TableHead className="max-w-md">Content</TableHead>
+                    <TableHead className="w-32">Location</TableHead>
+                    <TableHead className="w-24">Date</TableHead>
+                    <TableHead className="w-24">Time</TableHead>
+                    <TableHead className="w-24">Type</TableHead>
+                    <TableHead className="w-32">Source</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredDocuments.map((doc) => {
+                    const metadata = doc.metadata || {};
+                    const dateTime = parseDateTime(metadata.date);
+                    
+                    return (
+                      <TableRow key={doc.id}>
+                        <TableCell className="font-mono text-sm">
+                          {doc.id}
+                        </TableCell>
+                        <TableCell className="max-w-md">
                           <p className="text-sm">
                             {truncateContent(doc.content || 'No content')}
                           </p>
-                        </div>
-                      </TableCell>
-                      <TableCell>
-                        {metadataInfo && (
-                          <div className="flex flex-wrap gap-1">
-                            {metadataInfo.map((info, index) => (
-                              <Badge key={index} variant="secondary" className="text-xs">
-                                {info}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-                      </TableCell>
-                    </TableRow>
-                  );
-                })}
-              </TableBody>
-            </Table>
-          </div>
-        )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-xs">
+                            {metadata.location || '-'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {dateTime.date || '-'}
+                        </TableCell>
+                        <TableCell className="text-xs text-muted-foreground">
+                          {dateTime.time || '-'}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="secondary" className="text-xs">
+                            {metadata.type || '-'}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="text-xs">
+                            {metadata.source || '-'}
+                          </Badge>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </div>
       </CardContent>
     </Card>
   );
