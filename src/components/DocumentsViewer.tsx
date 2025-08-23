@@ -30,7 +30,6 @@ export const DocumentsViewer = () => {
   const [filters, setFilters] = useState({
     location: "",
     type: "",
-    source: "",
     content: "",
     dateFrom: "",
     dateTo: ""
@@ -102,23 +101,38 @@ export const DocumentsViewer = () => {
     return null;
   };
 
+  const extractLocationFromContent = (content: string): string | null => {
+    if (!content) return null;
+    const locationMatch = content.match(/"locationOfIncident":\s*"([^"]+)"/);
+    return locationMatch ? locationMatch[1] : null;
+  };
+
+  const extractTimeFromContent = (content: string): string | null => {
+    if (!content) return null;
+    const timeMatch = content.match(/"timeOfIncident":\s*"([^"]+)"/);
+    return timeMatch ? timeMatch[1] : null;
+  };
+
+  const extractTypeFromContent = (content: string): string | null => {
+    if (!content) return null;
+    const typeMatch = content.match(/"incidentType":\s*"([^"]+)"/);
+    return typeMatch ? typeMatch[1] : null;
+  };
+
   useEffect(() => {
     let filtered = documents;
 
     if (filters.location) {
-      filtered = filtered.filter(doc => 
-        doc.metadata?.location?.toLowerCase().includes(filters.location.toLowerCase())
-      );
+      filtered = filtered.filter(doc => {
+        const location = extractLocationFromContent(doc.content);
+        return location?.toLowerCase().includes(filters.location.toLowerCase());
+      });
     }
     if (filters.type) {
-      filtered = filtered.filter(doc => 
-        doc.metadata?.type?.toLowerCase().includes(filters.type.toLowerCase())
-      );
-    }
-    if (filters.source) {
-      filtered = filtered.filter(doc => 
-        doc.metadata?.source?.toLowerCase().includes(filters.source.toLowerCase())
-      );
+      filtered = filtered.filter(doc => {
+        const type = extractTypeFromContent(doc.content);
+        return type?.toLowerCase().includes(filters.type.toLowerCase());
+      });
     }
     if (filters.content) {
       filtered = filtered.filter(doc => 
@@ -143,18 +157,19 @@ export const DocumentsViewer = () => {
 
   const exportToCSV = () => {
     const csvContent = [
-      ["ID", "Content", "Location", "Date", "Time", "Type", "Source"],
+      ["ID", "Content", "Location", "Date", "Time", "Type"],
       ...filteredDocuments.map(doc => {
-        const metadata = doc.metadata || {};
         const extractedDate = extractDateFromContent(doc.content);
+        const extractedLocation = extractLocationFromContent(doc.content);
+        const extractedTime = extractTimeFromContent(doc.content);
+        const extractedType = extractTypeFromContent(doc.content);
         return [
           doc.id,
           `"${(doc.content || '').replace(/"/g, '""')}"`,
-          metadata.location || '',
+          extractedLocation || '',
           extractedDate || '',
-          '', // time column (empty for extracted dates)
-          metadata.type || '',
-          metadata.source || ''
+          extractedTime || '',
+          extractedType || ''
         ];
       })
     ].map(row => row.join(",")).join("\n");
@@ -204,7 +219,6 @@ export const DocumentsViewer = () => {
     setFilters({
       location: "",
       type: "",
-      source: "",
       content: "",
       dateFrom: "",
       dateTo: ""
@@ -283,12 +297,6 @@ export const DocumentsViewer = () => {
               onChange={(e) => setFilters(prev => ({ ...prev, type: e.target.value }))}
               className="w-48"
             />
-            <Input
-              placeholder="Filter by source..."
-              value={filters.source}
-              onChange={(e) => setFilters(prev => ({ ...prev, source: e.target.value }))}
-              className="w-48"
-            />
             <div className="flex items-center gap-2">
               <span className="text-sm">Date range:</span>
               <Input
@@ -324,51 +332,45 @@ export const DocumentsViewer = () => {
                     <TableHead className="w-32">Location</TableHead>
                     <TableHead className="w-24">Date</TableHead>
                     <TableHead className="w-24">Time</TableHead>
-                    <TableHead className="w-24">Type</TableHead>
-                    <TableHead className="w-32">Source</TableHead>
+                     <TableHead className="w-24">Type</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {filteredDocuments.map((doc) => {
-                    const metadata = doc.metadata || {};
-                    const extractedDate = extractDateFromContent(doc.content);
-                    console.log(`Document ${doc.id} content preview:`, doc.content?.substring(0, 100));
-                    console.log(`Extracted date for document ${doc.id}:`, extractedDate);
-                    
-                    return (
-                      <TableRow key={doc.id}>
-                        <TableCell className="font-mono text-sm">
-                          {doc.id}
-                        </TableCell>
-                        <TableCell className="max-w-md">
-                          <p className="text-sm">
-                            {truncateContent(doc.content || 'No content')}
-                          </p>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="text-xs">
-                            {metadata.location || '-'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                          {extractedDate || '-'}
-                        </TableCell>
-                        <TableCell className="text-xs text-muted-foreground">
-                          -
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="secondary" className="text-xs">
-                            {metadata.type || '-'}
-                          </Badge>
-                        </TableCell>
-                        <TableCell>
-                          <Badge variant="outline" className="text-xs">
-                            {metadata.source || '-'}
-                          </Badge>
-                        </TableCell>
-                      </TableRow>
-                    );
-                  })}
+                     const extractedDate = extractDateFromContent(doc.content);
+                     const extractedLocation = extractLocationFromContent(doc.content);
+                     const extractedTime = extractTimeFromContent(doc.content);
+                     const extractedType = extractTypeFromContent(doc.content);
+                     
+                     return (
+                       <TableRow key={doc.id}>
+                         <TableCell className="font-mono text-sm">
+                           {doc.id}
+                         </TableCell>
+                         <TableCell className="max-w-md">
+                           <p className="text-sm">
+                             {truncateContent(doc.content || 'No content')}
+                           </p>
+                         </TableCell>
+                         <TableCell>
+                           <Badge variant="outline" className="text-xs">
+                             {extractedLocation || '-'}
+                           </Badge>
+                         </TableCell>
+                         <TableCell className="text-xs text-muted-foreground">
+                           {extractedDate || '-'}
+                         </TableCell>
+                         <TableCell className="text-xs text-muted-foreground">
+                           {extractedTime || '-'}
+                         </TableCell>
+                         <TableCell>
+                           <Badge variant="secondary" className="text-xs">
+                             {extractedType || '-'}
+                           </Badge>
+                         </TableCell>
+                       </TableRow>
+                     );
+                   })}
                 </TableBody>
               </Table>
             </div>
