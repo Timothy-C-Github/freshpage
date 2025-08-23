@@ -70,9 +70,9 @@ export const DocumentsViewer = () => {
   const extractDateFromContent = (content: string): string | null => {
     if (!content) return null;
     
-    // Match the exact format: dateOfReport:"YYYY-MM-DD"
-    const dateMatch = content.match(/dateOfReport:"(\d{4}-\d{2}-\d{2})"/);
-    console.log('Searching for dateOfReport:"YYYY-MM-DD" in:', content.substring(0, 200));
+    // Match the exact format: "dateOfReport":"YYYY-MM-DD"
+    const dateMatch = content.match(/"dateOfReport":"(\d{4}-\d{2}-\d{2})"/);
+    console.log('Searching for "dateOfReport":"YYYY-MM-DD" in:', content.substring(0, 200));
     console.log('Date match result:', dateMatch);
     
     return dateMatch ? dateMatch[1] : null;
