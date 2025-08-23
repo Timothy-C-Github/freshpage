@@ -69,7 +69,9 @@ export const DocumentsViewer = () => {
 
   const extractDateFromContent = (content: string): string | null => {
     if (!content) return null;
+    console.log('Content to extract date from:', content.substring(0, 200) + '...');
     const dateMatch = content.match(/"dateOfReport"\s*:\s*"(\d{4}-\d{2}-\d{2})"/);
+    console.log('Date match result:', dateMatch);
     return dateMatch ? dateMatch[1] : null;
   };
 
@@ -303,6 +305,8 @@ export const DocumentsViewer = () => {
                   {filteredDocuments.map((doc) => {
                     const metadata = doc.metadata || {};
                     const extractedDate = extractDateFromContent(doc.content);
+                    console.log(`Document ${doc.id} content preview:`, doc.content?.substring(0, 100));
+                    console.log(`Extracted date for document ${doc.id}:`, extractedDate);
                     
                     return (
                       <TableRow key={doc.id}>
