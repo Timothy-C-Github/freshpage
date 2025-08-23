@@ -69,10 +69,27 @@ export const DocumentsViewer = () => {
 
   const extractDateFromContent = (content: string): string | null => {
     if (!content) return null;
-    console.log('Content to extract date from:', content.substring(0, 200) + '...');
-    const dateMatch = content.match(/"dateOfReport"\s*:\s*"(\d{4}-\d{2}-\d{2})"/);
-    console.log('Date match result:', dateMatch);
-    return dateMatch ? dateMatch[1] : null;
+    
+    // Try multiple patterns for date extraction
+    const patterns = [
+      /"dateOfReport"\s*:\s*"(\d{4}-\d{2}-\d{2})"/,  // "dateOfReport": "2025-07-29"
+      /"dateOfReport"\s*:\s*'(\d{4}-\d{2}-\d{2})'/,  // single quotes
+      /dateOfReport:\s*"(\d{4}-\d{2}-\d{2})"/,       // without quotes around key
+      /dateOfReport:\s*'(\d{4}-\d{2}-\d{2})'/,       // without quotes around key, single quotes
+      /"date"\s*:\s*"(\d{4}-\d{2}-\d{2})"/,          // just "date"
+      /(\d{4}-\d{2}-\d{2})/                          // any YYYY-MM-DD format
+    ];
+    
+    for (const pattern of patterns) {
+      const match = content.match(pattern);
+      if (match) {
+        console.log(`Found date ${match[1]} with pattern ${pattern}`);
+        return match[1];
+      }
+    }
+    
+    console.log('No date found in content:', content.substring(0, 200));
+    return null;
   };
 
   useEffect(() => {
