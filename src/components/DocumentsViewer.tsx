@@ -31,7 +31,9 @@ export const DocumentsViewer = () => {
     location: "",
     type: "",
     source: "",
-    content: ""
+    content: "",
+    dateFrom: "",
+    dateTo: ""
   });
 
   useEffect(() => {
@@ -48,13 +50,27 @@ export const DocumentsViewer = () => {
         .limit(20);
 
       if (error) throw error;
-      setDocuments(data || []);
-      setFilteredDocuments(data || []);
+      const sortedData = (data || []).sort((a, b) => {
+        const dateA = extractDateFromContent(a.content);
+        const dateB = extractDateFromContent(b.content);
+        if (!dateA && !dateB) return b.id - a.id; // fallback to ID desc
+        if (!dateA) return 1;
+        if (!dateB) return -1;
+        return new Date(dateB).getTime() - new Date(dateA).getTime(); // latest first
+      });
+      setDocuments(sortedData);
+      setFilteredDocuments(sortedData);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
     } finally {
       setLoading(false);
     }
+  };
+
+  const extractDateFromContent = (content: string): string | null => {
+    if (!content) return null;
+    const dateMatch = content.match(/"dateOfReport"\s*:\s*"(\d{4}-\d{2}-\d{2})"/);
+    return dateMatch ? dateMatch[1] : null;
   };
 
   useEffect(() => {
@@ -80,6 +96,18 @@ export const DocumentsViewer = () => {
         doc.content?.toLowerCase().includes(filters.content.toLowerCase())
       );
     }
+    if (filters.dateFrom) {
+      filtered = filtered.filter(doc => {
+        const docDate = extractDateFromContent(doc.content);
+        return docDate && docDate >= filters.dateFrom;
+      });
+    }
+    if (filters.dateTo) {
+      filtered = filtered.filter(doc => {
+        const docDate = extractDateFromContent(doc.content);
+        return docDate && docDate <= filters.dateTo;
+      });
+    }
 
     setFilteredDocuments(filtered);
   }, [documents, filters]);
@@ -89,13 +117,13 @@ export const DocumentsViewer = () => {
       ["ID", "Content", "Location", "Date", "Time", "Type", "Source"],
       ...filteredDocuments.map(doc => {
         const metadata = doc.metadata || {};
-        const dateTime = parseDateTime(metadata.date);
+        const extractedDate = extractDateFromContent(doc.content);
         return [
           doc.id,
           `"${(doc.content || '').replace(/"/g, '""')}"`,
           metadata.location || '',
-          dateTime.date,
-          dateTime.time,
+          extractedDate || '',
+          '', // time column (empty for extracted dates)
           metadata.type || '',
           metadata.source || ''
         ];
@@ -148,7 +176,9 @@ export const DocumentsViewer = () => {
       location: "",
       type: "",
       source: "",
-      content: ""
+      content: "",
+      dateFrom: "",
+      dateTo: ""
     });
   };
 
@@ -230,6 +260,22 @@ export const DocumentsViewer = () => {
               onChange={(e) => setFilters(prev => ({ ...prev, source: e.target.value }))}
               className="w-48"
             />
+            <div className="flex items-center gap-2">
+              <span className="text-sm">Date range:</span>
+              <Input
+                type="date"
+                value={filters.dateFrom}
+                onChange={(e) => setFilters(prev => ({ ...prev, dateFrom: e.target.value }))}
+                className="w-40"
+              />
+              <span className="text-sm">to</span>
+              <Input
+                type="date"
+                value={filters.dateTo}
+                onChange={(e) => setFilters(prev => ({ ...prev, dateTo: e.target.value }))}
+                className="w-40"
+              />
+            </div>
             <Button variant="outline" size="sm" onClick={clearFilters}>
               Clear All
             </Button>
@@ -256,7 +302,7 @@ export const DocumentsViewer = () => {
                 <TableBody>
                   {filteredDocuments.map((doc) => {
                     const metadata = doc.metadata || {};
-                    const dateTime = parseDateTime(metadata.date);
+                    const extractedDate = extractDateFromContent(doc.content);
                     
                     return (
                       <TableRow key={doc.id}>
@@ -274,10 +320,10 @@ export const DocumentsViewer = () => {
                           </Badge>
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
-                          {dateTime.date || '-'}
+                          {extractedDate || '-'}
                         </TableCell>
                         <TableCell className="text-xs text-muted-foreground">
-                          {dateTime.time || '-'}
+                          -
                         </TableCell>
                         <TableCell>
                           <Badge variant="secondary" className="text-xs">
