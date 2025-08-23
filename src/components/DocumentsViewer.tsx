@@ -70,12 +70,19 @@ export const DocumentsViewer = () => {
   const extractDateFromContent = (content: string): string | null => {
     if (!content) return null;
     
-    // Match the exact format: "dateOfReport":"YYYY-MM-DD"
-    const dateMatch = content.match(/"dateOfReport":"(\d{4}-\d{2}-\d{2})"/);
-    console.log('Searching for "dateOfReport":"YYYY-MM-DD" in:', content.substring(0, 200));
-    console.log('Date match result:', dateMatch);
+    // Match date at the beginning: "Mon Aug 22 16:14:23 +0000 2025"
+    const dateMatch = content.match(/^(\w{3} \w{3} \d{1,2} \d{2}:\d{2}:\d{2} [+-]\d{4} \d{4})/);
+    if (dateMatch) {
+      try {
+        const date = new Date(dateMatch[1]);
+        return format(date, 'yyyy-MM-dd');
+      } catch (e) {
+        console.log('Error parsing date:', dateMatch[1]);
+        return null;
+      }
+    }
     
-    return dateMatch ? dateMatch[1] : null;
+    return null;
   };
 
   useEffect(() => {
