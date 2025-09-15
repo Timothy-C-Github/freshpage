@@ -15,7 +15,6 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Download, Filter } from "lucide-react";
 import { format, isValid, parseISO } from "date-fns";
-import { CsvUploader } from "./CsvUploader";
 
 interface Document {
   id: number;
@@ -257,28 +256,7 @@ export const DocumentsViewer = () => {
   }
 
   return (
-    <div className="grid gap-6 md:grid-cols-[350px_1fr] lg:grid-cols-[400px_1fr]">
-      {/* Left sidebar with CSV uploader */}
-      <div className="space-y-6">
-        <div>
-          <h2 className="text-lg font-semibold">CSV Upload</h2>
-          <p className="text-muted-foreground text-sm">
-            Upload CSV files via webhook
-          </p>
-        </div>
-        <CsvUploader />
-      </div>
-
-      {/* Main content */}
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold">Documents Database</h1>
-          <p className="text-muted-foreground mt-1 text-sm">
-            Browse and search through security incident documents
-          </p>
-        </div>
-
-        <Card>
+    <Card>
       <CardHeader>
         <div className="flex justify-between items-start">
           <div>
@@ -399,8 +377,6 @@ export const DocumentsViewer = () => {
           )}
         </div>
       </CardContent>
-        </Card>
-      </div>
-    </div>
+    </Card>
   );
 };
