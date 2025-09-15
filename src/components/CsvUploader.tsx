@@ -11,8 +11,8 @@ export function CsvUploader() {
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
   
-  // Webhook URL is pre-configured
-  const webhookUrl = ""; // TODO: Set your webhook URL here
+  // Webhook URL is pre-configured (same as report generator)
+  const webhookUrl = "https://primary-production-b5ec.up.railway.app/webhook/64ae32ba-582c-4921-8452-5e0d81256d00";
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
