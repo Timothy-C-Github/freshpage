@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useToast } from "@/components/ui/use-toast";
 import { cn } from "@/lib/utils";
+import { Upload } from "lucide-react";
 
 export type DateOption = "Today" | "Next 7 Days" | "Next 14 Days" | "Next 30 Days" | "";
 
@@ -28,6 +29,7 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
   const [location, setLocation] = useState("");
   const [date, setDate] = useState<DateOption>("Today");
   const [email, setEmail] = useState("");
+  const [csvFile, setCsvFile] = useState<File | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   const { toast } = useToast();
@@ -51,19 +53,36 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
 
       const webhookUrl = "https://primary-production-b5ec.up.railway.app/webhook/64ae32ba-582c-4921-8452-5e0d81256d00";
 
-      const dateQuery = `&dateOption=${encodeURIComponent(date)}`;
+      let response;
+      
+      if (csvFile) {
+        // If CSV file is provided, use POST with FormData
+        const formData = new FormData();
+        formData.append('file', csvFile);
+        formData.append('location', location);
+        formData.append('dateOption', date);
+        formData.append('email', email);
 
-      const response = await fetch(
-        `${webhookUrl}?location=${encodeURIComponent(
-          location
-        )}${dateQuery}&email=${encodeURIComponent(email)}`,
-        {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
+        response = await fetch(webhookUrl, {
+          method: "POST",
+          body: formData,
+        });
+      } else {
+        // Use GET method for requests without CSV file
+        const dateQuery = `&dateOption=${encodeURIComponent(date)}`;
+        
+        response = await fetch(
+          `${webhookUrl}?location=${encodeURIComponent(
+            location
+          )}${dateQuery}&email=${encodeURIComponent(email)}`,
+          {
+            method: "GET",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          }
+        );
+      }
 
       if (!response.ok) {
         throw new Error(`Server responded with status: ${response.status}`);
@@ -93,6 +112,7 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
       setLocation("");
       setDate("Today");
       setEmail("");
+      setCsvFile(null);
 
       toast({
         title: "Success",
@@ -156,6 +176,34 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
           onChange={(e) => setEmail(e.target.value)}
           className="bg-secondary/50"
         />
+      </div>
+
+      <div className="space-y-2">
+        <Label htmlFor="csv-file">CSV File (Optional)</Label>
+        <div className="relative">
+          <Input
+            id="csv-file"
+            type="file"
+            accept=".csv"
+            onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
+            className="bg-secondary/50 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+          />
+          {csvFile && (
+            <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
+              <Upload className="h-4 w-4" />
+              <span>{csvFile.name}</span>
+              <Button
+                type="button"
+                variant="ghost"
+                size="sm"
+                onClick={() => setCsvFile(null)}
+                className="h-auto p-1 text-xs"
+              >
+                Remove
+              </Button>
+            </div>
+          )}
+        </div>
       </div>
 
       <Button type="submit" className="w-full font-semibold" disabled={isLoading}>
