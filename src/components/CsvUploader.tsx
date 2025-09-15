@@ -8,9 +8,11 @@ import { Upload, FileSpreadsheet } from "lucide-react";
 
 export function CsvUploader() {
   const [file, setFile] = useState<File | null>(null);
-  const [webhookUrl, setWebhookUrl] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
+  
+  // Webhook URL is pre-configured
+  const webhookUrl = ""; // TODO: Set your webhook URL here
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
@@ -28,10 +30,19 @@ export function CsvUploader() {
   };
 
   const handleUpload = async () => {
-    if (!file || !webhookUrl) {
+    if (!file) {
       toast({
         title: "Missing requirements",
-        description: "Please select a CSV file and enter a webhook URL",
+        description: "Please select a CSV file",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (!webhookUrl) {
+      toast({
+        title: "Webhook not configured",
+        description: "Webhook URL is not configured. Please contact administrator.",
         variant: "destructive",
       });
       return;
@@ -59,7 +70,6 @@ export function CsvUploader() {
 
       // Reset form
       setFile(null);
-      setWebhookUrl("");
       const fileInput = document.getElementById('csv-file') as HTMLInputElement;
       if (fileInput) fileInput.value = '';
 
@@ -103,19 +113,9 @@ export function CsvUploader() {
           )}
         </div>
 
-        <div className="space-y-2">
-          <Label htmlFor="webhook-url">Webhook URL (optional)</Label>
-          <Input
-            id="webhook-url"
-            placeholder="https://example.com/webhook"
-            value={webhookUrl}
-            onChange={(e) => setWebhookUrl(e.target.value)}
-          />
-        </div>
-
         <Button 
           onClick={handleUpload} 
-          disabled={!file || !webhookUrl || isUploading}
+          disabled={!file || isUploading}
           className="w-full"
         >
           {isUploading ? (
