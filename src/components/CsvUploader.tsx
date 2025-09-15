@@ -2,38 +2,36 @@ import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { useToast } from "@/hooks/use-toast";
-import { Upload, FileSpreadsheet } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useToast } from "@/components/ui/use-toast";
+import { Upload, FileText } from "lucide-react";
 
-export function CsvUploader() {
+export const CsvUploader = () => {
   const [file, setFile] = useState<File | null>(null);
+  const [webhookUrl, setWebhookUrl] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
-  
-  // Webhook URL is pre-configured (same as report generator)
-  const webhookUrl = "https://primary-production-b5ec.up.railway.app/webhook/64ae32ba-582c-4921-8452-5e0d81256d00";
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      if (selectedFile.type !== "text/csv" && !selectedFile.name.endsWith('.csv')) {
-        toast({
-          title: "Invalid file type",
-          description: "Please select a CSV file",
-          variant: "destructive",
-        });
-        return;
-      }
+    if (selectedFile && selectedFile.type === 'text/csv') {
       setFile(selectedFile);
+    } else {
+      toast({
+        title: "Invalid file type",
+        description: "Please select a CSV file",
+        variant: "destructive",
+      });
     }
   };
 
-  const handleUpload = async () => {
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
     if (!file) {
       toast({
-        title: "Missing requirements",
-        description: "Please select a CSV file",
+        title: "No file selected",
+        description: "Please select a CSV file to upload",
         variant: "destructive",
       });
       return;
@@ -41,43 +39,51 @@ export function CsvUploader() {
 
     if (!webhookUrl) {
       toast({
-        title: "Webhook not configured",
-        description: "Webhook URL is not configured. Please contact administrator.",
+        title: "No webhook URL",
+        description: "Please enter a webhook URL to send the CSV data",
         variant: "destructive",
       });
       return;
     }
 
+    setIsUploading(true);
+
     try {
-      setIsUploading(true);
-
-      const formData = new FormData();
-      formData.append('file', file);
-
+      const csvText = await file.text();
+      
       const response = await fetch(webhookUrl, {
-        method: 'POST',
-        body: formData,
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          filename: file.name,
+          csvData: csvText,
+          timestamp: new Date().toISOString(),
+        }),
       });
 
       if (!response.ok) {
-        throw new Error(`Upload failed with status: ${response.status}`);
+        throw new Error(`Webhook responded with status: ${response.status}`);
       }
 
       toast({
-        title: "Success",
-        description: "CSV file uploaded successfully",
+        title: "CSV uploaded successfully",
+        description: "Your CSV data has been sent to the webhook",
       });
 
-      // Reset form
       setFile(null);
+      setWebhookUrl("");
+      
+      // Reset file input
       const fileInput = document.getElementById('csv-file') as HTMLInputElement;
       if (fileInput) fileInput.value = '';
 
     } catch (error) {
-      console.error('Upload error:', error);
+      console.error("Error uploading CSV:", error);
       toast({
         title: "Upload failed",
-        description: "Failed to upload CSV file. Please try again.",
+        description: "Failed to send CSV data to webhook. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -86,48 +92,54 @@ export function CsvUploader() {
   };
 
   return (
-    <Card>
+    <Card className="w-full">
       <CardHeader>
         <CardTitle className="flex items-center gap-2">
-          <FileSpreadsheet className="h-5 w-5" />
+          <Upload className="h-5 w-5" />
           CSV Upload
         </CardTitle>
-        <CardDescription>
-          Upload a CSV file to process via webhook
-        </CardDescription>
       </CardHeader>
-      <CardContent className="space-y-4">
-        <div className="space-y-2">
-          <Label htmlFor="csv-file">Select CSV File</Label>
-          <Input
-            id="csv-file"
-            type="file"
-            accept=".csv"
-            onChange={handleFileChange}
-            className="cursor-pointer"
-          />
-          {file && (
-            <p className="text-sm text-muted-foreground">
-              Selected: {file.name}
-            </p>
-          )}
-        </div>
+      <CardContent>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <Label htmlFor="webhook-url">Webhook URL</Label>
+            <Input
+              id="webhook-url"
+              type="url"
+              placeholder="https://your-webhook-url.com"
+              value={webhookUrl}
+              onChange={(e) => setWebhookUrl(e.target.value)}
+              className="bg-secondary/50"
+            />
+          </div>
 
-        <Button 
-          onClick={handleUpload} 
-          disabled={!file || isUploading}
-          className="w-full"
-        >
-          {isUploading ? (
-            "Uploading..."
-          ) : (
-            <>
-              <Upload className="h-4 w-4 mr-2" />
-              Upload CSV
-            </>
+          <div className="space-y-2">
+            <Label htmlFor="csv-file">CSV File</Label>
+            <Input
+              id="csv-file"
+              type="file"
+              accept=".csv"
+              onChange={handleFileChange}
+              className="bg-secondary/50"
+            />
+          </div>
+
+          {file && (
+            <div className="flex items-center gap-2 p-2 bg-secondary/30 rounded-md">
+              <FileText className="h-4 w-4" />
+              <span className="text-sm">{file.name}</span>
+            </div>
           )}
-        </Button>
+
+          <Button 
+            type="submit" 
+            className="w-full" 
+            disabled={isUploading || !file || !webhookUrl}
+          >
+            {isUploading ? "Uploading..." : "Upload CSV"}
+          </Button>
+        </form>
       </CardContent>
     </Card>
   );
-}
+};

@@ -3,7 +3,6 @@ import { useState } from "react";
 import { ReportForm, GeneratedReport } from "@/components/ReportForm";
 import { ReportList } from "@/components/ReportList";
 import { DocumentsViewer } from "@/components/DocumentsViewer";
-import { CsvUploader } from "@/components/CsvUploader";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 const Index = () => {
@@ -52,9 +51,6 @@ const Index = () => {
                 <div className="bg-card rounded-lg border border-border/40 p-6">
                   <ReportForm onReportGenerated={handleReportGenerated} />
                 </div>
-
-                {/* CSV Upload Section */}
-                <CsvUploader />
               </div>
               
               {/* Reports column */}
