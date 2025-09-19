@@ -53,36 +53,25 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
 
       const webhookUrl = "https://primary-production-b5ec.up.railway.app/webhook/64ae32ba-582c-4921-8452-5e0d81256d00";
 
-      let response;
-      
+      let csvContent = "";
       if (csvFile) {
-        // If CSV file is provided, use POST with FormData
-        const formData = new FormData();
-        formData.append('file', csvFile);
-        formData.append('location', location);
-        formData.append('dateOption', date);
-        formData.append('email', email);
-
-        response = await fetch(webhookUrl, {
-          method: "POST",
-          body: formData,
-        });
-      } else {
-        // Use GET method for requests without CSV file
-        const dateQuery = `&dateOption=${encodeURIComponent(date)}`;
-        
-        response = await fetch(
-          `${webhookUrl}?location=${encodeURIComponent(
-            location
-          )}${dateQuery}&email=${encodeURIComponent(email)}`,
-          {
-            method: "GET",
-            headers: {
-              "Content-Type": "application/json",
-            },
-          }
-        );
+        csvContent = await csvFile.text();
       }
+
+      const dateQuery = `&dateOption=${encodeURIComponent(date)}`;
+      const csvQuery = csvContent ? `&csvContent=${encodeURIComponent(csvContent)}` : "";
+      
+      const response = await fetch(
+        `${webhookUrl}?location=${encodeURIComponent(
+          location
+        )}${dateQuery}&email=${encodeURIComponent(email)}${csvQuery}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       if (!response.ok) {
         throw new Error(`Server responded with status: ${response.status}`);
