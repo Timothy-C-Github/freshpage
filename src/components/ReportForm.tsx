@@ -131,6 +131,9 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
           onChange={(e) => setLocation(e.target.value)}
           className="bg-secondary/50"
         />
+        <p className="text-xs text-muted-foreground">
+          Note: If uploading a CSV file, you can put any desired value here.
+        </p>
       </div>
 
       <div className="space-y-2">
@@ -169,7 +172,7 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
 
       <div className="space-y-2">
         <Label htmlFor="csv-file">CSV File (Optional)</Label>
-        <div className="relative">
+        <div className="relative flex items-center">
           <Input
             id="csv-file"
             type="file"
