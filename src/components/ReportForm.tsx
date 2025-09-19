@@ -170,9 +170,9 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
         />
       </div>
 
-      <div className="space-y-2">
+      <div className="space-y-1">
         <Label htmlFor="csv-file">CSV File (Optional)</Label>
-        <div className="relative flex justify-center">
+        <div className="relative flex justify-center items-center min-h-[40px]">
           <Input
             id="csv-file"
             type="file"
