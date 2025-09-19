@@ -172,30 +172,30 @@ export function ReportForm({ onReportGenerated }: ReportFormProps) {
 
       <div className="space-y-2">
         <Label htmlFor="csv-file">CSV File (Optional)</Label>
-        <div className="relative flex items-center">
+        <div className="relative flex justify-center">
           <Input
             id="csv-file"
             type="file"
             accept=".csv"
             onChange={(e) => setCsvFile(e.target.files?.[0] || null)}
-            className="bg-secondary/50 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
+            className="bg-secondary/50 text-center file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary/90"
           />
-          {csvFile && (
-            <div className="mt-2 flex items-center gap-2 text-sm text-muted-foreground">
-              <Upload className="h-4 w-4" />
-              <span>{csvFile.name}</span>
-              <Button
-                type="button"
-                variant="ghost"
-                size="sm"
-                onClick={() => setCsvFile(null)}
-                className="h-auto p-1 text-xs"
-              >
-                Remove
-              </Button>
-            </div>
-          )}
         </div>
+        {csvFile && (
+          <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground">
+            <Upload className="h-4 w-4" />
+            <span>{csvFile.name}</span>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => setCsvFile(null)}
+              className="h-auto p-1 text-xs"
+            >
+              Remove
+            </Button>
+          </div>
+        )}
       </div>
 
       <Button type="submit" className="w-full font-semibold" disabled={isLoading}>
